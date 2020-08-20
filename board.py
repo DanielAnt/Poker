@@ -5,6 +5,13 @@ class Board():
         self.AvaiablePlaces = 4
         self.slots = {}
         self.cards = []
+        self.slotsCords = {
+            0 : [100,350],
+            1 : [1238,350],
+            2 : [634,50],
+            3 : [634,650]
+        }
+
         for slot in range(self.AvaiablePlaces):
             self.slots[slot] = None
 

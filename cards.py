@@ -34,6 +34,9 @@ class Cards():
     def  schuffle(self):
         random.shuffle(self.deck)
 
+    def deal_card(self):
+        return self.deck.pop()
+
 
 
 deck1 = Cards()
