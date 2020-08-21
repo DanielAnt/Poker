@@ -5,6 +5,7 @@ import sys
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 SERVER = socket.gethostbyname(socket.gethostname())
 PORT = 5050
+clientid = 0
 
 #print(socket.gethostname())
 
@@ -13,11 +14,13 @@ try:
 except socket.error as e:
     print(str(e))
 
-#s.listen(2)
-#print("Waiting for a connection")
 
 
 def connect_client(conn):
+global clientid
+
+
+
    while True:
         try:
             data = conn.recv(2048)
@@ -28,11 +31,6 @@ def connect_client(conn):
             else:
                 print("Recieved: " + reply)
                 arr = reply.split(":")
-                id = int(arr[0])
-                pos[id] = reply
-
-                if id == 0: nid = 1
-                if id == 1: nid = 0
 
                 reply = pos[nid][:]
                 print("Sending: " + reply)
@@ -47,5 +45,4 @@ def connect_client(conn):
 while True:
     conn, addr = s.accept()
     print("Connected to: ", addr)
-
     start_new_thread(connect_client, (conn,))

@@ -36,8 +36,6 @@ class Main:
         quit_button.grid(row=2, column=1, padx=15, pady=5)
 
     def connect(self):
-
-
         for widget in self.main_frame.winfo_children():
             widget.destroy()
         creation_frame = Frame(self.main_frame, bg=self.bgColor)
