@@ -1,5 +1,9 @@
 class Board():
 
+    class seat():
+        
+
+
     def __init__(self):
         self.ActivePlayers = 0
         self.AvaiablePlaces = 4
