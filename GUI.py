@@ -2,9 +2,11 @@ from tkinter import *
 from tkinter import messagebox
 from lobbyclient import *
 import pickle
+from _thread import *
+from game import main_game
 
 
-class Main:
+class GUI:
 
     def __init__(self, master):
         self.master = master
@@ -12,6 +14,8 @@ class Main:
         self.main_frame = Frame(self.master, bg=self.bgColor, width=300, height=300)
         self.main_frame.pack(fill=BOTH, expand=True)
         self.load_lobby_menu()
+        self.client = None
+        self.games_lobby_list = {}
 
     def load_lobby_menu(self):
         if self.main_frame:
@@ -85,12 +89,17 @@ class Main:
             create_button.grid(row=n, column=0, columnspan=2, pady=10, sticky=S)
 
             self.games_listbox = Listbox(games_frame, width=30, height=10, justify=LEFT)
-            games_join_button = Button(games_frame, text="JOIN", width=11)
+            games_nickname_label = Label(games_frame, text="Nickname", bg=self.bgColor)
+            games_nickname_entry = Entry(games_frame, justify="left", width=15)
+            games_join_button = Button(games_frame, text="JOIN", width=11,
+                                       command=lambda: start_new_thread(self.join_game, (games_nickname_entry.get(),)))
             games_refresh_button = Button(games_frame, text="REFRESH", width=11, command=self.refresh)
 
             self.games_listbox.grid(row=0, column=0, columnspan=2, pady=10, padx=5)
-            games_join_button.grid(row=1, column=0, pady=10)
-            games_refresh_button.grid(row=1, column=1, pady=10)
+            games_nickname_label.grid(row=1, column=0, pady=10)
+            games_nickname_entry.grid(row=1, column=1, pady=10)
+            games_join_button.grid(row=2, column=0, pady=10)
+            games_refresh_button.grid(row=2, column=1, pady=10)
 
             self.refresh()
         else:
@@ -109,11 +118,18 @@ class Main:
     def refresh(self):
         lobby = self.client.refresh_lobby()
         if lobby != "empty":
-            test = pickle.loads(lobby)
-            self.games_listbox.delete(0,END)
-            print(test)
-            for lob in test:
-                self.games_listbox.insert(END,lob[0])
+            lobby = pickle.loads(lobby)
+            self.games_listbox.delete(0, END)
+            self.games_lobby_list = {}
+            for lob in lobby:
+                self.games_lobby_list[lob[0]] = [lob[2], lob[3]]
+                self.games_listbox.insert(END, [lob[0], lob[1]])
+
+    def join_game(self, nickname="BOBAN"):
+        if self.games_listbox.get(ACTIVE):
+            game_id, name = self.games_listbox.get(ACTIVE)
+            ip, port = self.games_lobby_list[game_id]
+            main_game(nickname, ip, port)
 
     @staticmethod
     def quit():
@@ -125,11 +141,12 @@ if __name__ == '__main__':
 
     def on_closing():
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
-
+            if main_window.client:
+                main_window.client.send("bye")
             quit()
 
     root = Tk()
-    Main(root)
+    main_window = GUI(root)
     root.title('Poker')
     root.resizable(False, False)
     root.protocol("WM_DELETE_WINDOW", on_closing)

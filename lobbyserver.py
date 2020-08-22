@@ -17,7 +17,7 @@ class LobbyServer:
         self.game_id = 10000
         self.start_server()
 
-    def connect_client(self, user):
+    def connect_client(self, user,addr):
         connected = True
         while connected:
             try:
@@ -58,7 +58,7 @@ class LobbyServer:
             except Exception as e:
                 print(e)
                 break
-        print("Connection Closed")
+        print(f"{addr} disconnected")
         user.close()
 
     def create_new_table(self, user):
@@ -73,7 +73,7 @@ class LobbyServer:
         name, min_buyin, max_buyin, blind = msg.split(";")
         self.game_id += 1
         self.game_port += 1
-        self.game_servers_list.append([name, self.SERVER, self.game_port, self.game_id, min_buyin, max_buyin, blind])
+        self.game_servers_list.append([self.game_id, name, self.SERVER, self.game_port, min_buyin, max_buyin, blind])
         GameServer(name, self.SERVER, self.game_port, self.game_id, min_buyin, max_buyin, blind)
 
     def start_server(self):
@@ -84,7 +84,7 @@ class LobbyServer:
         while True:
             conn, addr = self.server.accept()
             print("Connected to: ", addr)
-            start_new_thread(self.connect_client, (conn,))
+            start_new_thread(self.connect_client, (conn,addr,))
 
 
 lobby_server = LobbyServer()

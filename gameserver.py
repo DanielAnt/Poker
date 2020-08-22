@@ -11,10 +11,10 @@ class GameServer:
         self.port = port
         self.addr = (self.ip, self.port)
         self.format = "utf-8"
-        self.header = 2048
+        self.header = 512
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(self.addr)
-        print(f'Name={self.name} IP={self.ip} PORT={self.port} has started')
+        print(f'Name={self.name} IP={self.ip} PORT={self.port} has started GAME SERVER')
         self.connect_players()
 
     def connect_client(self, conn):
@@ -45,7 +45,7 @@ class GameServer:
         self.server.listen(4)
         while True:
             conn, addr = self.server.accept()
-            print(addr, " has connected to server")
+            print(addr, " has connected to game server")
             start_new_thread(self.connect_client, (conn,))
 
 

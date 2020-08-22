@@ -9,12 +9,11 @@ class GameClient():
             self.host_port = int(port)
             self.addr = (self.host_ip, self.host_port)
             self.format = "utf-8"
-            self.header = 64
+            self.header = 512
             self.client.connect(self.addr)
 
-    def refresh_lobby(self):
-        self.send("REFRESH")
-        return self.recive()
+    def update(self):
+
 
     def send(self,message):
         msg = message.encode(self.format)
@@ -23,6 +22,7 @@ class GameClient():
         send_length += b' ' * (self.header - len(send_length))
         self.client.send(send_length)
         self.client.send(msg)
+        return
 
     def recive(self):
         msg_length = self.client.recv(self.header).decode(self.format)
