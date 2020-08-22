@@ -39,7 +39,4 @@ class Cards():
 
 
 
-deck1 = Cards()
-print(deck1.deck)
-deck1.schuffle()
-print(deck1.deck)
+
