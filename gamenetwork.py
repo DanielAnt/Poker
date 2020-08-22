@@ -1,5 +1,6 @@
 import socket
-class LobbyClient():
+
+class GameClient():
 
     def __init__(self, ip=None, port=None):
         if ip and port:
@@ -8,7 +9,7 @@ class LobbyClient():
             self.host_port = int(port)
             self.addr = (self.host_ip, self.host_port)
             self.format = "utf-8"
-            self.header = 128
+            self.header = 64
             self.client.connect(self.addr)
 
     def refresh_lobby(self):
@@ -26,18 +27,14 @@ class LobbyClient():
     def recive(self):
         msg_length = self.client.recv(self.header).decode(self.format)
         msg_length = int(msg_length)
-
-        #msg = self.client.recv(msg_length).decode(self.format)
-        msg = self.client.recv(msg_length)
-        try:
-            if msg.decode(self.format) == "empty":
-                return "empty"
-        except UnicodeDecodeError:
-            return msg
+        msg = self.client.recv(msg_length).decode(self.format)
+        return msg
 
 
 
 
 
+#new_client = Lobby_client(ip="192.168.1.132", port=16000)
 
-#c = LobbyClient(ip="192.168.1.132", port=16000)
+
+

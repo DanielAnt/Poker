@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 from lobbyclient import *
+import pickle
 
 
 class Main:
@@ -10,9 +11,9 @@ class Main:
         self.bgColor = 'white'
         self.main_frame = Frame(self.master, bg=self.bgColor, width=300, height=300)
         self.main_frame.pack(fill=BOTH, expand=True)
-        self.display_connection()
+        self.load_lobby_menu()
 
-    def display_connection(self):
+    def load_lobby_menu(self):
         if self.main_frame:
             for widget in self.main_frame.winfo_children():
                 widget.destroy()
@@ -44,7 +45,7 @@ class Main:
         host_port = 16000
         if host_ip and host_port:
             try:
-                self.client = Lobby_client(ip=host_ip, port=host_port)
+                self.client = LobbyClient(ip=host_ip, port=host_port)
                 connected = True
             except ValueError:
                 pass
@@ -64,7 +65,10 @@ class Main:
             max_entry = Entry(creation_frame, justify="left")
             blind_label = Label(creation_frame, text="BLINDS", bg=self.bgColor)
             blind_entry = Entry(creation_frame, justify="left")
-            create_button = Button(creation_frame, text="CREATE TABLE", command=self.create_table)
+            create_button = Button(creation_frame, text="CREATE TABLE",
+                                   command=lambda: self.create_table(
+                                       name_entry.get(), min_entry.get(),
+                                       max_entry.get(), blind_entry.get()))
             n = 0
             name_label.grid(row=n, column=0, pady=10)
             name_entry.grid(row=n, column=1, pady=10)
@@ -87,17 +91,29 @@ class Main:
             self.games_listbox.grid(row=0, column=0, columnspan=2, pady=10, padx=5)
             games_join_button.grid(row=1, column=0, pady=10)
             games_refresh_button.grid(row=1, column=1, pady=10)
+
             self.refresh()
         else:
             messagebox.showerror(title="Couldn't connect", message="Wrong values or couldn't connect")
 
-    def create_table(self):
-        pass
+    def create_table(self, name="test", min_buy_in=10, max_buy_in=20, blind=2):
+        if name and min_buy_in and max_buy_in and blind:
+            if 3 < len(name) < 12 and min_buy_in.isdigit() and max_buy_in.isdigit() and blind.isdigit():
+                self.client.send("NEWTABLE")
+                self.client.send(f"{name};{min_buy_in};{max_buy_in};{blind}")
+            else:
+                messagebox.showerror(title="Error", message="Something wrong with options")
+        else:
+            messagebox.showerror(title="Error", message="Fill all entries")
 
     def refresh(self):
         lobby = self.client.refresh_lobby()
-        self.games_listbox.delete(0, END)
-        self.games_listbox.insert(END, lobby)
+        if lobby != "empty":
+            test = pickle.loads(lobby)
+            self.games_listbox.delete(0,END)
+            print(test)
+            for lob in test:
+                self.games_listbox.insert(END,lob[0])
 
     @staticmethod
     def quit():
@@ -109,6 +125,7 @@ if __name__ == '__main__':
 
     def on_closing():
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
+
             quit()
 
     root = Tk()

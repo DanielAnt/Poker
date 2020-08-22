@@ -1,55 +1,90 @@
 import socket
 from _thread import *
+import pickle
+from gameserver import GameServer
 
 
-SERVER = "192.168.1.132"
-PORT = 16000
-ADDR = (SERVER, PORT)
-FORMAT = "utf-8"
+class LobbyServer:
 
+    def __init__(self):
+        self.SERVER = "192.168.1.132"
+        self.PORT = 16000
+        self.ADDR = (self.SERVER, self.PORT)
+        self.format = "utf-8"
+        self.header = 128
+        self.game_servers_list = []
+        self.game_port = self.PORT
+        self.game_id = 10000
+        self.start_server()
 
-def connect_client(conn):
-    connected = True
-    while connected:
-        try:
-            msg_length = conn.recv(64).decode(FORMAT)
-            msg_length = int(msg_length)
-            msg = conn.recv(msg_length).decode(FORMAT)
-            if msg == "bye":
-                connected = False
-            if msg == "REFRESH":
-                message = "TONY"
+    def connect_client(self, user):
+        connected = True
+        while connected:
+            try:
+                msg_length = user.recv(self.header).decode(self.format)
+                if msg_length:
+                    msg_length = int(msg_length)
+                    msg = user.recv(msg_length).decode(self.format)
+                    if msg == "bye":
+                        connected = False
+                    elif msg == "REFRESH":
+                        if len(self.game_servers_list) > 0:
+                            msg = pickle.dumps(self.game_servers_list)
+                            msg_length = len(msg)
+                            send_length = str(msg_length).encode(self.format)
+                            send_length += b' ' * (self.header - len(send_length))
+                            user.send(send_length)
+                            user.send(msg)
+                        else:
+                            message = "empty"
+                            msg = message.encode(self.format)
+                            msg_length = len(msg)
+                            send_length = str(msg_length).encode(self.format)
+                            send_length += b' ' * (self.header - len(send_length))
+                            user.send(send_length)
+                            user.send(msg)
+                    elif msg == "NEWTABLE":
+                        self.create_new_table(user)
+                """ 
+                print(msg)
+                message = "Message "
                 msg = message.encode(FORMAT)
                 msg_length = len(msg)
                 send_length = str(msg_length).encode(FORMAT)
                 send_length += b' ' * (64 - len(send_length))
                 conn.send(send_length)
                 conn.send(msg)
-            """ 
+                """
+            except Exception as e:
+                print(e)
+                break
+        print("Connection Closed")
+        user.close()
+
+    def create_new_table(self, user):
+        msg_length = user.recv(self.header).decode(self.format)
+        if msg_length:
+            msg_length = int(msg_length)
+            msg = user.recv(msg_length).decode(self.format)
             print(msg)
-            message = "Message "
-            msg = message.encode(FORMAT)
-            msg_length = len(msg)
-            send_length = str(msg_length).encode(FORMAT)
-            send_length += b' ' * (64 - len(send_length))
-            conn.send(send_length)
-            conn.send(msg)
-            """
-        except:
-            break
+            start_new_thread(self.new_game_server, (msg,))
 
-    print("Connection Closed")
-    conn.close()
+    def new_game_server(self, msg):
+        name, min_buyin, max_buyin, blind = msg.split(";")
+        self.game_id += 1
+        self.game_port += 1
+        self.game_servers_list.append([name, self.SERVER, self.game_port, self.game_id, min_buyin, max_buyin, blind])
+        GameServer(name, self.SERVER, self.game_port, self.game_id, min_buyin, max_buyin, blind)
 
-
-def server_start():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(ADDR)
-    print(f'[{SERVER}], STARTED')
-    server.listen(1)
-    conn, addr = server.accept()
-    print("Connected to: ", addr)
-    start_new_thread(connect_client, (conn,))
+    def start_server(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind(self.ADDR)
+        print(f'[{self.SERVER}], STARTED')
+        self.server.listen()
+        while True:
+            conn, addr = self.server.accept()
+            print("Connected to: ", addr)
+            start_new_thread(self.connect_client, (conn,))
 
 
-server_start()
+lobby_server = LobbyServer()
