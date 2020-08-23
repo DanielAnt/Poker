@@ -4,7 +4,6 @@ from board import *
 from player import *
 import pickle
 
-
 class GameServer:
 
     def __init__(self, name, ip, port, gameid, min_buy_in, max_buy_in, blind):
@@ -44,7 +43,9 @@ class GameServer:
 
     def authentication(self, user):
         login_client = False
+        user.settimeout(5)
         while True:
+
             msg_length = user.recv(self.header).decode(self.format)
             if msg_length:
                 msg_length = int(msg_length)
@@ -60,6 +61,8 @@ class GameServer:
                         self.players[player_id] = Player(player_id, player_name, 100)
                         self.send_pickle(user, self.players[player_id])
                         break
+            else:
+                print("timeout")
         if login_client:
             self.connect_client(user, player_id)
         else:
@@ -82,6 +85,10 @@ class GameServer:
                         player_id, player_name = player_info.split(";")
                         self.players[player_id] = Player(player_id, player_name, 100)
                         self.send_pickle(user, self.players[player_id])
+                    elif msg == "START":
+                        if self.board.active_players > 1 and not self.board.game_status:
+                            self.board.count_active_players(self.players)
+                            hand = self.board.start_hand()
                     elif msg == "SIT":
                         seat_id = self.recive_message(user)
                         seat_id = int(seat_id)
@@ -92,7 +99,8 @@ class GameServer:
                         self.players[player_id].stand_up()
                     elif msg == "bye":
                         connected = False
-
+                else:
+                    connected = False
             except Exception as e:
                 print(e)
                 break

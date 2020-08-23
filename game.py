@@ -1,4 +1,3 @@
-import sys
 import pygame
 from player import *
 from board import *
@@ -15,6 +14,8 @@ def main_game(nickname, ip, port, client_id):
         if seat:
             game_client.send("STANDUP")
 
+    def start_game():
+        game_client.send("START")
 
     def draw_text(text, font, color, surface, x, y):
         x = int(x)
@@ -23,7 +24,6 @@ def main_game(nickname, ip, port, client_id):
         textrect = textobj.get_rect()
         textrect.center = (x, y)
         surface.blit(textobj, textrect)
-
 
     def table_view():
         click = False
@@ -37,21 +37,33 @@ def main_game(nickname, ip, port, client_id):
             stand_up_button = pygame.Rect(1500, 800, 80, 40)
             if stand_up_button.collidepoint(mx, my) and click:
                 stand_up(player.seat)
-
-            pygame.draw.rect(screen, (255,255,255), stand_up_button)
+            pygame.draw.rect(screen, (255, 255, 255), stand_up_button)
             draw_text("Stand Up", font, (0, 0, 0), screen, 1540, 820)
 
+            if board.active_players > 1 and not board.game_status:
+                start_game_button = pygame.Rect(1500, 700, 80, 40)
+                if start_game_button.collidepoint(mx, my) and click:
+                    start_game()
+                pygame.draw.rect(screen, (255, 255, 255), start_game_button)
+                draw_text("Start Game", font, (0, 0, 0), screen, 1540, 720)
+
+            quit_game_button = pygame.Rect(1500, 100, 80, 40)
+            if quit_game_button.collidepoint(mx, my) and click:
+                quit()
+            pygame.draw.rect(screen, (255, 255, 255), quit_game_button)
+            draw_text("QUIT", font, (0, 0, 0), screen, 1540, 120)
+
             for seat_number, seat in board.seats.items():
-                x,y = seat.cords
+                x, y = seat.cords
                 seat_image = pygame.image.load("PNG/emptyseat.png")
                 dx, dy = seat_image.get_rect().size
                 if seat.state:
                     screen.blit(seat_image, (x, y))
                     draw_text(seat.state.name, font, (0, 0, 0), screen, x+dx/2, y+dy/2)
                 else:
-                    screen.blit(seat_image,(x,y))
+                    screen.blit(seat_image, (x, y))
                     draw_text("Empty", font, (0, 0, 0), screen, x+dx/2, y+dy/2)
-                    if player.seat == False:
+                    if not player.seat:
                         if pygame.Rect(x, y, dx, dy).collidepoint(mx, my) and click:
                             take_a_seat(seat.id)
 
@@ -65,7 +77,6 @@ def main_game(nickname, ip, port, client_id):
                     game_client.disconnect()
                     pygame.quit()
 
-
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         click = True
@@ -74,14 +85,12 @@ def main_game(nickname, ip, port, client_id):
     WHITE = 255, 255, 255
     GREEN = 0, 200, 0
 
-
-
     if ip != "0.0.0.0":
         game_client = GameClient(ip=ip, port=port, client_id=client_id, client_name=nickname)
         player = game_client.login()
         if player:
             pygame.init()
-            size = width, height = 1600, 900
+            size = 1600, 900
             screen = pygame.display.set_mode(size)
             font = pygame.font.SysFont(None, 20)
             table_view()
@@ -90,16 +99,16 @@ def main_game(nickname, ip, port, client_id):
             game_client.disconnect()
     else:
         board = Board(100, "test", 10, 10, 1)
-        player = Player(100,"Andy",100)
-
+        player = Player(100, "Andy", 100)
 
 
 if __name__ == '__main__':
 
-
-    main_game("BOY", "192.168.1.132", 16001, 10123)
-    #main_game("JACK", "192.168.1.132", 16001, 10054)
-    #main_game("ANDY","0.0.0.0","16001")
+    val = input("chose player:")
+    if int(val) == 1:
+        main_game("BOY", "192.168.1.132", 16001, 10123)
+    elif int(val) == 2:
+        main_game("JACK", "192.168.1.132", 16001, 10054)
 
 
 """
@@ -150,18 +159,3 @@ while True:
 
 
 """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
