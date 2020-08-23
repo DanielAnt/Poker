@@ -2,7 +2,8 @@ class Board:
 
     class Seat:
 
-        def __init__(self, x, y):
+        def __init__(self, seat_id, x, y):
+            self.id = seat_id
             self.cords = (x, y)
             self.state = False
 
@@ -27,4 +28,4 @@ class Board:
         }
         for num in range(4):
             x, y = self.seats_cords[num]
-            self.seats[num] = self.Seat(x, y)
+            self.seats[num] = self.Seat(num, x, y)

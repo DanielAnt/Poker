@@ -91,15 +91,19 @@ class GUI:
             self.games_listbox = Listbox(games_frame, width=30, height=10, justify=LEFT)
             games_nickname_label = Label(games_frame, text="Nickname", bg=self.bgColor)
             games_nickname_entry = Entry(games_frame, justify="left", width=15)
+            games_id_label = Label(games_frame, text="ID", bg=self.bgColor)
+            games_id_entry = Entry(games_frame, justify="left", width=15)
             games_join_button = Button(games_frame, text="JOIN", width=11,
-                                       command=lambda: start_new_thread(self.join_game, (games_nickname_entry.get(),)))
+                                       command=lambda: start_new_thread(self.join_game, (games_nickname_entry.get(),games_id_entry.get())))
             games_refresh_button = Button(games_frame, text="REFRESH", width=11, command=self.refresh)
 
             self.games_listbox.grid(row=0, column=0, columnspan=2, pady=10, padx=5)
             games_nickname_label.grid(row=1, column=0, pady=10)
             games_nickname_entry.grid(row=1, column=1, pady=10)
-            games_join_button.grid(row=2, column=0, pady=10)
-            games_refresh_button.grid(row=2, column=1, pady=10)
+            games_id_label.grid(row=2, column=0, pady=10)
+            games_id_entry.grid(row=2, column=1, pady=10)
+            games_join_button.grid(row=3, column=0, pady=10)
+            games_refresh_button.grid(row=3, column=1, pady=10)
 
             self.refresh()
         else:
@@ -125,11 +129,11 @@ class GUI:
                 self.games_lobby_list[lob[0]] = [lob[2], lob[3]]
                 self.games_listbox.insert(END, [lob[0], lob[1]])
 
-    def join_game(self, nickname="BOBAN"):
+    def join_game(self, nickname="BOBAN", client_id="10005"):
         if self.games_listbox.get(ACTIVE):
             game_id, name = self.games_listbox.get(ACTIVE)
             ip, port = self.games_lobby_list[game_id]
-            main_game(nickname, ip, port)
+            main_game(nickname, ip, port, client_id)
 
     @staticmethod
     def quit():

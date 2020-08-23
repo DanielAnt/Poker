@@ -3,10 +3,18 @@ import pygame
 from player import *
 from board import *
 from gamenetwork import *
-from cards import *
 
 
-def main_game(nickname, ip, port):
+def main_game(nickname, ip, port, client_id):
+
+    def take_a_seat(seat_id):
+        game_client.send("SIT")
+        game_client.send(seat_id)
+
+    def stand_up(seat):
+        if seat:
+            game_client.send("STANDUP")
+
 
     def draw_text(text, font, color, surface, x, y):
         x = int(x)
@@ -16,20 +24,20 @@ def main_game(nickname, ip, port):
         textrect.center = (x, y)
         surface.blit(textobj, textrect)
 
-    def update():
-        board = game_client.update()
 
     def table_view():
         click = False
         play = True
         while play:
-            update()
+            board, player = game_client.update()
+
             screen.fill(GREEN)
             mx, my = pygame.mouse.get_pos()
             #### BUTTONS #####
             stand_up_button = pygame.Rect(1500, 800, 80, 40)
-            if stand_up_button.collidepoint((mx,my)) and click:
-                player.stand_up()
+            if stand_up_button.collidepoint(mx, my) and click:
+                stand_up(player.seat)
+
             pygame.draw.rect(screen, (255,255,255), stand_up_button)
             draw_text("Stand Up", font, (0, 0, 0), screen, 1540, 820)
 
@@ -43,45 +51,55 @@ def main_game(nickname, ip, port):
                 else:
                     screen.blit(seat_image,(x,y))
                     draw_text("Empty", font, (0, 0, 0), screen, x+dx/2, y+dy/2)
-                    if not player.seat:
-                        if pygame.Rect(x, y, dx, dy).collidepoint((mx, my)) and click:
-                            seat.sit_down(player)
-                            player.sit_down(seat)
+                    if player.seat == False:
+                        if pygame.Rect(x, y, dx, dy).collidepoint(mx, my) and click:
+                            take_a_seat(seat.id)
 
             click = False
             pygame.display.flip()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
                     play = False
                     game_client.send("bye")
+                    game_client.disconnect()
+                    pygame.quit()
+
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         click = True
 
-
-
-
-    board = Board(100, "test", 10, 10, 1)
-    player = Player(name=nickname)
     ## COLORS ##
     WHITE = 255, 255, 255
     GREEN = 0, 200, 0
-    pygame.init()
-    size = width, height = 1600, 900
-    screen = pygame.display.set_mode(size)
-    font = pygame.font.SysFont(None, 20)
+
+
+
     if ip != "0.0.0.0":
-        game_client = GameClient(ip,port)
+        game_client = GameClient(ip=ip, port=port, client_id=client_id, client_name=nickname)
+        player = game_client.login()
+        if player:
+            pygame.init()
+            size = width, height = 1600, 900
+            screen = pygame.display.set_mode(size)
+            font = pygame.font.SysFont(None, 20)
+            table_view()
+        else:
+            print("Client already connected")
+            game_client.disconnect()
     else:
-        board = Board()
-    table_view()
+        board = Board(100, "test", 10, 10, 1)
+        player = Player(100,"Andy",100)
+
+
 
 if __name__ == '__main__':
 
-    main_game("ANDY","0.0.0.0","00000")
+
+    main_game("BOY", "192.168.1.132", 16001, 10123)
+    #main_game("JACK", "192.168.1.132", 16001, 10054)
+    #main_game("ANDY","0.0.0.0","16001")
 
 
 """
