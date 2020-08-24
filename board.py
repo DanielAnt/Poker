@@ -20,14 +20,18 @@ class Board:
     def __init__(self, game_id, name, min_buy_in, max_buy_in, small_blind):
         self.game_id = game_id
         self.name = name
+
         self.min_buy_in = min_buy_in
         self.max_buy_in = max_buy_in
         self.small_blind = small_blind
         self.seats = {}
+
         self.active_players = 0
         self.active_players_ids = []
         self.dealer_pos = 0
         self.hand_id = 0
+        self.cards = []
+
         self.game_status = False
         self.seats_cords = {
             0: [100, 350],
@@ -40,6 +44,7 @@ class Board:
             self.seats[num] = Seat(self, num, x, y)
 
     def start_hand(self):
+        self.game_status = True
         self.hand_id += 1
         seats_len = len(self.seats)
         for num in range(1, seats_len + 1):
@@ -80,4 +85,3 @@ class Hand:
         self.big_blind = small_blind * 2
         self.players = players
         self.dealer_position = dealer_pos
-        print(f"hand id={self.hand_id},active_players_ids= {self.players}")

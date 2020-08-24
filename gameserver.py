@@ -2,6 +2,7 @@ import socket
 from _thread import *
 from board import *
 from player import *
+from cards import *
 import pickle
 
 class GameServer:
@@ -89,6 +90,20 @@ class GameServer:
                         if self.board.active_players > 1 and not self.board.game_status:
                             self.board.count_active_players(self.players)
                             hand = self.board.start_hand()
+                            self.cards = Cards()
+                            self.cards.schuffle()
+                            for _ in range(2):
+                                for playerid in self.board.active_players_ids:
+                                    self.players[playerid].cards.append(self.cards.deal_card())
+                    elif msg == "DEALCARDS":
+                        if len(self.board.cards) == 0:
+                            for _ in range(3):
+                                self.board.cards.append(self.cards.deal_card())
+                        elif 5 > len(self.board.cards) > 2:
+                                self.board.cards.append(self.cards.deal_card())
+
+
+
                     elif msg == "SIT":
                         seat_id = self.recive_message(user)
                         seat_id = int(seat_id)
@@ -108,6 +123,8 @@ class GameServer:
         if self.players[player_id].seat:
             self.players[player_id].stand_up()
         del self.players[player_id]
+        if self.board.active_players < 2:
+            self.board.game_status = False
         user.close()
 
 

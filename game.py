@@ -47,6 +47,19 @@ def main_game(nickname, ip, port, client_id):
                 pygame.draw.rect(screen, (255, 255, 255), start_game_button)
                 draw_text("Start Game", font, (0, 0, 0), screen, 1540, 720)
 
+            if board.game_status:
+                deal_cards_button = pygame.Rect(1500, 600, 80, 40)
+                if deal_cards_button.collidepoint(mx, my) and click:
+                    game_client.send("DEALCARDS")
+                pygame.draw.rect(screen, (255, 255, 255), deal_cards_button)
+                draw_text("deal cards", font, (0, 0, 0), screen, 1540, 620)
+
+            if board.cards:
+                card_x, card_y = 600, 388
+                for dis, card in enumerate(board.cards):
+                    board_card_image = pygame.image.load("PNG/"+card+".png")
+                    screen.blit(board_card_image, (card_x + 100 * dis, card_y))
+
             quit_game_button = pygame.Rect(1500, 100, 80, 40)
             if quit_game_button.collidepoint(mx, my) and click:
                 quit()
@@ -57,7 +70,27 @@ def main_game(nickname, ip, port, client_id):
                 x, y = seat.cords
                 seat_image = pygame.image.load("PNG/emptyseat.png")
                 dx, dy = seat_image.get_rect().size
+                if x > width / 2:
+                    deal_dx = -50
+                else:
+                    deal_dx = 50
+                if y > height / 2:
+                    deal_dy = -50
+                else:
+                    deal_dy = 50
+                if board.game_status and seat_number == board.dealer_pos:
+                    deal_image = pygame.image.load("PNG/dealerchip3.png")
+                    screen.blit(deal_image, (x + deal_dx, y + deal_dy))
                 if seat.state:
+                    if board.game_status:
+                        if seat.state == player:
+                            for iter, card in enumerate(player.cards):
+                                card_image = pygame.image.load("PNG/" + card + ".png")
+                                screen.blit(card_image, (x + (deal_dx * 3) * iter, y + (deal_dy * 2)))
+                        else:
+                            for iter in range(2):
+                                card_image = pygame.image.load("PNG/gray_back.png")
+                                screen.blit(card_image, (x + (deal_dx) * iter * 2, y + (deal_dy * 2)))
                     screen.blit(seat_image, (x, y))
                     draw_text(seat.state.name, font, (0, 0, 0), screen, x+dx/2, y+dy/2)
                 else:
@@ -90,7 +123,7 @@ def main_game(nickname, ip, port, client_id):
         player = game_client.login()
         if player:
             pygame.init()
-            size = 1600, 900
+            size = width, height = 1600, 900
             screen = pygame.display.set_mode(size)
             font = pygame.font.SysFont(None, 20)
             table_view()
@@ -109,6 +142,8 @@ if __name__ == '__main__':
         main_game("BOY", "192.168.1.132", 16001, 10123)
     elif int(val) == 2:
         main_game("JACK", "192.168.1.132", 16001, 10054)
+    elif int(val) == 3:
+        main_game("TRAY", "192.168.1.132", 16001, 10057)
 
 
 """
