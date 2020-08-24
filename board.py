@@ -28,20 +28,13 @@ class Board:
 
         self.active_players = 0
         self.active_players_ids = []
-        self.dealer_pos = 0
+        self.dealer_pos = 1
         self.hand_id = 0
         self.cards = []
 
         self.game_status = False
-        self.seats_cords = {
-            0: [100, 350],
-            1: [1238, 350],
-            2: [634, 50],
-            3: [634, 650]
-        }
-        for num in range(4):
-            x, y = self.seats_cords[num]
-            self.seats[num] = Seat(self, num, x, y)
+        for num in range(8):
+            self.seats[num] = Seat(self, num)
 
     def start_hand(self):
         self.game_status = True
@@ -62,10 +55,9 @@ class Board:
 
 class Seat:
 
-    def __init__(self, master, seat_id, x, y):
+    def __init__(self, master, seat_id):
         self.master = master
         self.id = seat_id
-        self.cords = (x, y)
         self.state = False
 
     def sit_down(self, player):
