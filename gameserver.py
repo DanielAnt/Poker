@@ -88,13 +88,13 @@ class GameServer:
                         self.send_pickle(user, self.players[player_id])
                     elif msg == "START":
                         if self.board.active_players > 1 and not self.board.game_status:
-                            self.board.count_active_players(self.players)
-                            hand = self.board.start_hand()
+                            hand = self.board.start_hand(self.players)
                             self.cards = Cards()
                             self.cards.schuffle()
                             for _ in range(2):
-                                for playerid in self.board.active_players_ids:
-                                    self.players[playerid].cards.append(self.cards.deal_card())
+                                for player in self.players:
+                                    if self.players[player].seat:
+                                        self.players[player].cards.append(self.cards.deal_card())
                     elif msg == "DEALCARDS":
                         if len(self.board.cards) == 0:
                             for _ in range(3):

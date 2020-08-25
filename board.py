@@ -1,21 +1,5 @@
 class Board:
 
-    """
-    class Seat:
-
-        def __init__(self, seat_id, x, y):
-            self.id = seat_id
-            self.cords = (x, y)
-            self.state = False
-
-        def sit_down(self, player):
-            self.state = player
-            self.active_players += 1
-
-        def stand_up(self):
-            self.state = False
-            self.active_players -= 1
-    """
 
     def __init__(self, game_id, name, min_buy_in, max_buy_in, small_blind):
         self.game_id = game_id
@@ -36,7 +20,7 @@ class Board:
         for num in range(8):
             self.seats[num] = Seat(self, num)
 
-    def start_hand(self):
+    def start_hand(self, players):
         self.game_status = True
         self.hand_id += 1
         seats_len = len(self.seats)
@@ -44,13 +28,7 @@ class Board:
             if self.seats[(self.dealer_pos + num) % seats_len].state:
                 self.dealer_pos = (self.dealer_pos + num) % seats_len
                 break
-        return Hand(self.hand_id, self.active_players_ids, self.small_blind, self.dealer_pos)
-
-    def count_active_players(self, players):
-        self.active_players_ids = []
-        for player in players:
-            if players[player].seat:
-                self.active_players_ids.append(player)
+        return Hand(self.hand_id, players, self.small_blind, self.dealer_pos, self.seats)
 
 
 class Seat:
@@ -61,7 +39,12 @@ class Seat:
         self.state = False
 
     def sit_down(self, player):
-        self.state = player
+        player_attributes = {
+            "id": player.id,
+            "name": player.name,
+            "money": player.money
+        }
+        self.state = player_attributes
         self.master.active_players += 1
 
     def stand_up(self):
@@ -71,9 +54,37 @@ class Seat:
 
 class Hand:
 
-    def __init__(self, hand_id, players, small_blind, dealer_pos):
+    def __init__(self, hand_id, players, small_blind, dealer_pos, seats):
         self.hand_id = hand_id
         self.small_blind = small_blind
         self.big_blind = small_blind * 2
-        self.players = players
         self.dealer_position = dealer_pos
+        print("here")
+        self.active_players = self.count_active_players(players)
+        self.active_seats = self.count_active_seats(seats)
+        print("here2")
+        if len(players) < 4:
+            self.current_player = dealer_pos
+        else:
+            k = 0
+            for num in range(1,len(seats)+1):
+                if seats[dealer_pos + num].state:
+                    k += 1
+                if k == 3:
+                    self.current_player = dealer_pos
+
+
+
+        self.pot = 0
+
+    def count_active_players(self, players):
+        return [players[player] for player in players if players[player].seat]
+
+    def count_active_seats(self, seats):
+        return [seats[seat] for seat in seats if seats[seat].state]
+
+    def next_player(self):
+        pass
+
+
+

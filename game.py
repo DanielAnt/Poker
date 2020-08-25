@@ -14,8 +14,17 @@ def main_game(nickname, ip, port, client_id):
         if seat:
             game_client.send("STANDUP")
 
-    def start_game():
+    def game_start():
         game_client.send("START")
+
+    def game_bet():
+        game_client.send("BET")
+
+    def game_check():
+        game_client.send("CHECK")
+
+    def game_pass():
+        game_client.send("PASS")
 
     def draw_text(text, font, color, surface, x, y):
         x = int(x)
@@ -27,9 +36,9 @@ def main_game(nickname, ip, port, client_id):
 
     def calculate_seat_pos(width, height):
         cen_x = width * 0.5
-        cen_y = height * 0.5
-        dx = cen_x * 0.85
-        dy = cen_y * 0.85
+        cen_y = height * 0.45
+        dx = cen_x * 0.75
+        dy = cen_y * 0.75
         dx1 = dx * 0.65
         dy1 = dy * 0.75
 
@@ -45,50 +54,78 @@ def main_game(nickname, ip, port, client_id):
         }
         return seats_pos
 
-
+    def create_button(buttons,text, pos, size):
+        x, y = pos
+        x, y = int(x), int(y)
+        w, h = size
+        w, h = int(w), int(h)
+        buttons[text] = pygame.Rect(x, y, w, h)
+        pygame.draw.rect(screen, (255, 255, 255), buttons[text])
+        draw_text(text, font, (0, 0, 0), screen, int(x + 0.5 * w), int(y + 0.5 * h))
+        return buttons
 
 
     def table_view():
         click = False
         play = True
         while play:
+            buttons = {}
             board, player = game_client.update()
 
             screen.fill(GREEN)
             mx, my = pygame.mouse.get_pos()
             #### BUTTONS #####
-            stand_up_button = pygame.Rect(1500, 800, 80, 40)
-            if stand_up_button.collidepoint(mx, my) and click:
+
+            ## STAND UP BUTTON
+            buttons = create_button(buttons, "STAND UP", (width - width * 0.07, height - height * 0.1),
+                                    (width * 0.06, height * 0.04))
+            if buttons["STAND UP"].collidepoint(mx, my) and click:
                 stand_up(player.seat)
-            pygame.draw.rect(screen, (255, 255, 255), stand_up_button)
-            draw_text("Stand Up", font, (0, 0, 0), screen, 1540, 820)
-
+            ## START GAME
             if board.active_players > 1 and not board.game_status:
-                start_game_button = pygame.Rect(1500, 700, 80, 40)
-                if start_game_button.collidepoint(mx, my) and click:
-                    start_game()
-                pygame.draw.rect(screen, (255, 255, 255), start_game_button)
-                draw_text("Start Game", font, (0, 0, 0), screen, 1540, 720)
-
+                buttons = create_button(buttons, "START GAME", (width - width * 0.07, height - height * 0.15),
+                                        (width * 0.06, height * 0.04))
+                if buttons["START GAME"].collidepoint(mx, my) and click:
+                    game_start()
+            ## TEST DEAL CARDS
             if board.game_status:
-                deal_cards_button = pygame.Rect(1500, 600, 80, 40)
-                if deal_cards_button.collidepoint(mx, my) and click:
+                buttons = create_button(buttons, "DEALCARDS", (width - width * 0.07, height - height * 0.2),
+                                        (width * 0.06, height * 0.04))
+                if buttons["DEALCARDS"].collidepoint(mx, my) and click:
                     game_client.send("DEALCARDS")
-                pygame.draw.rect(screen, (255, 255, 255), deal_cards_button)
-                draw_text("deal cards", font, (0, 0, 0), screen, 1540, 620)
-
-            if board.cards:
+            ## BOARD DISPLAYING BOARD CARDS
+            if board.game_status and board.cards:
                 card_x, card_y = 600, 388
                 for dis, card in enumerate(board.cards):
                     board_card_image = pygame.image.load("PNG/"+card+"_60.png")
                     screen.blit(board_card_image, (card_x + 100 * dis, card_y))
-
+            ## QUIT BUTTON
             quit_game_button = pygame.Rect(1500, 100, 80, 40)
             if quit_game_button.collidepoint(mx, my) and click:
                 quit()
             pygame.draw.rect(screen, (255, 255, 255), quit_game_button)
             draw_text("QUIT", font, (0, 0, 0), screen, 1540, 120)
 
+            ## BET BUTTON
+            buttons = create_button(buttons, "BET",(width - width * 0.35, height - height * 0.2),
+                                    (width / 25, height / 25))
+            if buttons["BET"].collidepoint(mx, my) and click:
+                game_bet()
+            ## PASS BUTTON
+            buttons = create_button(buttons, "CHECK", (width - width * 0.30, height - height * 0.2),
+                                    (int(width / 25), int(height / 25)))
+            if buttons["CHECK"].collidepoint(mx, my) and click:
+                game_check()
+            ## CHECK BUTTON
+            buttons = create_button(buttons, "PASS", (width - width * 0.25, height - height * 0.2),
+                                    (width / 25, height / 25))
+            if buttons["PASS"].collidepoint(mx, my) and click:
+                game_pass()
+
+
+
+
+            ## DISPLAYING SEATS, PLAYER CARDS, DEALER CHIP
             for seat_number, seat in board.seats.items():
                 x, y = seats_pos[seat_number]
                 x, y = int(x), int(y)
@@ -117,7 +154,7 @@ def main_game(nickname, ip, port, client_id):
                     screen.blit(deal_image, deal_image_rect)
                 if seat.state:
                     if board.game_status:
-                        if seat.state == player:
+                        if seat.state["id"] == player.id:
                             for iter, card in enumerate(player.cards):
                                 card_image = pygame.image.load("PNG/" + card + "_60.png")
                                 card_image_rect = card_image.get_rect()
@@ -130,7 +167,7 @@ def main_game(nickname, ip, port, client_id):
                                 card_back_image_rect.center = x + card_dx + 25 * iter, y + card_dy + 25 * iter
                                 screen.blit(card_back_image, card_back_image_rect)
                     screen.blit(seat_image, seat_image_rect)
-                    draw_text(seat.state.name, font, (0, 0, 0), screen, x, y)
+                    draw_text(seat.state["name"], font, (0, 0, 0), screen, x, y)
                 else:
                     screen.blit(seat_image, seat_image_rect)
                     draw_text("Empty", font, (0, 0, 0), screen, x, y)
