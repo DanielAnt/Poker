@@ -59,10 +59,8 @@ class Hand:
         self.small_blind = small_blind
         self.big_blind = small_blind * 2
         self.dealer_position = dealer_pos
-        print("here")
         self.active_players = self.count_active_players(players)
         self.active_seats = self.count_active_seats(seats)
-        print("here2")
         if len(players) < 4:
             self.current_player = dealer_pos
         else:

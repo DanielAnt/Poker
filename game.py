@@ -54,13 +54,13 @@ def main_game(nickname, ip, port, client_id):
         }
         return seats_pos
 
-    def create_button(buttons,text, pos, size):
+    def create_button(buttons,text, pos, size, color):
         x, y = pos
         x, y = int(x), int(y)
         w, h = size
         w, h = int(w), int(h)
         buttons[text] = pygame.Rect(x, y, w, h)
-        pygame.draw.rect(screen, (255, 255, 255), buttons[text])
+        pygame.draw.rect(screen, color, buttons[text])
         draw_text(text, font, (0, 0, 0), screen, int(x + 0.5 * w), int(y + 0.5 * h))
         return buttons
 
@@ -78,19 +78,19 @@ def main_game(nickname, ip, port, client_id):
 
             ## STAND UP BUTTON
             buttons = create_button(buttons, "STAND UP", (width - width * 0.07, height - height * 0.1),
-                                    (width * 0.06, height * 0.04))
+                                    (width * 0.06, height * 0.04), WHITE)
             if buttons["STAND UP"].collidepoint(mx, my) and click:
                 stand_up(player.seat)
             ## START GAME
             if board.active_players > 1 and not board.game_status:
                 buttons = create_button(buttons, "START GAME", (width - width * 0.07, height - height * 0.15),
-                                        (width * 0.06, height * 0.04))
+                                        (width * 0.06, height * 0.04), WHITE)
                 if buttons["START GAME"].collidepoint(mx, my) and click:
                     game_start()
             ## TEST DEAL CARDS
             if board.game_status:
                 buttons = create_button(buttons, "DEALCARDS", (width - width * 0.07, height - height * 0.2),
-                                        (width * 0.06, height * 0.04))
+                                        (width * 0.06, height * 0.04), WHITE)
                 if buttons["DEALCARDS"].collidepoint(mx, my) and click:
                     game_client.send("DEALCARDS")
             ## BOARD DISPLAYING BOARD CARDS
@@ -103,22 +103,63 @@ def main_game(nickname, ip, port, client_id):
             quit_game_button = pygame.Rect(1500, 100, 80, 40)
             if quit_game_button.collidepoint(mx, my) and click:
                 quit()
-            pygame.draw.rect(screen, (255, 255, 255), quit_game_button)
-            draw_text("QUIT", font, (0, 0, 0), screen, 1540, 120)
+            pygame.draw.rect(screen, WHITE, quit_game_button)
+            draw_text("QUIT", font, BLACK, screen, 1540, 120)
+
+            ## BET RECT
+            betting_rect = pygame.Rect(width - width * 0.37, height - height * 0.22,
+                                       width * 0.18, height * 0.2)
+            pygame.draw.rect(screen, GREY, betting_rect)
+
+
+
+
+            ## BETTING SILDER
+            slider_start_x = int(width - width * 0.36)
+            slider_start_y = int(height - height * 0.1)
+            slider_width = int(width * 0.16)
+            slider_height = int(height * 0.005)
+            slider_end_x = slider_start_x + slider_width
+            slider_range = slider_end_x - slider_start_x
+            slider_rect = pygame.Rect(slider_start_x, slider_start_y,
+                                      slider_width, slider_height)
+            slider_rect.center = int(slider_start_x + slider_width * 0.5), slider_start_y
+            slider_rect_hitbox = pygame.Rect(slider_start_x,slider_start_y,
+                                             slider_width+10, slider_height + 25)
+            slider_rect_hitbox.center = int(slider_start_x + slider_width * 0.5), slider_start_y
+            pygame.draw.rect(screen, BLACK, slider_rect)
+            if slider_rect_hitbox.collidepoint(mx, my) and click:
+                dot_x = round(mx,0)
+                if dot_x < slider_start_x:
+                    dot_x = slider_start_x
+                if dot_x > slider_end_x:
+                    dot_x = slider_end_x
+                bet_size = round(player.money * ((dot_x - slider_start_x) / slider_range), 1)
+
+            if "dot_x" not in locals() or "dot_y" not in locals():
+                dot_x, dot_y = int(slider_start_x), int(slider_start_y)
+            pygame.draw.circle(screen, RED, (dot_x, dot_y), 7)
+            ## BET SIZE
+            bet_size = round(player.money * ((dot_x - slider_start_x) / slider_range), 1)
+            if bet_size < 0 or "bet_size" not in locals():
+                bet_size = 0
+            draw_text(str(bet_size)+" $", font, BLACK, screen, width - width * 0.34, height - height * 0.13)
+
+
 
             ## BET BUTTON
             buttons = create_button(buttons, "BET",(width - width * 0.35, height - height * 0.2),
-                                    (width / 25, height / 25))
+                                    (width / 25, height / 25), WHITE)
             if buttons["BET"].collidepoint(mx, my) and click:
                 game_bet()
-            ## PASS BUTTON
+            ## PASS BUTTO8
             buttons = create_button(buttons, "CHECK", (width - width * 0.30, height - height * 0.2),
-                                    (int(width / 25), int(height / 25)))
+                                    (width / 25, height / 25), WHITE)
             if buttons["CHECK"].collidepoint(mx, my) and click:
                 game_check()
             ## CHECK BUTTON
             buttons = create_button(buttons, "PASS", (width - width * 0.25, height - height * 0.2),
-                                    (width / 25, height / 25))
+                                    (width / 25, height / 25), WHITE)
             if buttons["PASS"].collidepoint(mx, my) and click:
                 game_pass()
 
@@ -168,6 +209,8 @@ def main_game(nickname, ip, port, client_id):
                                 screen.blit(card_back_image, card_back_image_rect)
                     screen.blit(seat_image, seat_image_rect)
                     draw_text(seat.state["name"], font, (0, 0, 0), screen, x, y)
+                    draw_text(str(seat.state["money"])+" $", font, (0, 0, 0), screen, x, y + deal_dy * (-1))
+
                 else:
                     screen.blit(seat_image, seat_image_rect)
                     draw_text("Empty", font, (0, 0, 0), screen, x, y)
@@ -192,6 +235,9 @@ def main_game(nickname, ip, port, client_id):
     ## COLORS ##
     WHITE = 255, 255, 255
     GREEN = 0, 200, 0
+    GREY = 192, 192, 192
+    BLACK = 0, 0, 0
+    RED = 255, 0 , 0
 
     if ip != "0.0.0.0":
         game_client = GameClient(ip=ip, port=port, client_id=client_id, client_name=nickname)
