@@ -88,7 +88,9 @@ class GameServer:
                         self.send_pickle(user, self.players[player_id])
                     elif msg == "START":
                         if self.board.active_players > 1 and not self.board.game_status:
-                            hand = self.board.start_hand(self.players)
+                            self.hand = self.board.start_hand(self.players)
+                            self.board.pot, self.board.players_pots = self.hand.return_pots()
+
                             self.cards = Cards()
                             self.cards.schuffle()
                             for _ in range(2):

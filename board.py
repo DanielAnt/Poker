@@ -1,6 +1,5 @@
 class Board:
 
-
     def __init__(self, game_id, name, min_buy_in, max_buy_in, small_blind):
         self.game_id = game_id
         self.name = name
@@ -15,6 +14,8 @@ class Board:
         self.dealer_pos = 1
         self.hand_id = 0
         self.cards = []
+        self.pot = None
+        self.players_pots = None
 
         self.game_status = False
         for num in range(8):
@@ -58,22 +59,34 @@ class Hand:
         self.hand_id = hand_id
         self.small_blind = small_blind
         self.big_blind = small_blind * 2
-        self.dealer_position = dealer_pos
         self.active_players = self.count_active_players(players)
         self.active_seats = self.count_active_seats(seats)
-        if len(players) < 4:
-            self.current_player = dealer_pos
-        else:
-            k = 0
-            for num in range(1,len(seats)+1):
-                if seats[dealer_pos + num].state:
-                    k += 1
-                if k == 3:
-                    self.current_player = dealer_pos
-
-
-
+        self.orderd_player_list = []
         self.pot = 0
+        for pos, seat in enumerate(self.active_seats):
+            if seat.id == dealer_pos:
+                self.dealer_position = pos
+            for player in self.active_players:
+                if seat.state["id"] == player.id:
+                    self.orderd_player_list.append(player)
+        self.current_pos = self.dealer_position
+        self.reset_pots()
+
+        if len(self.active_players) == 2:
+            self.put_players_money_to_pot(self.orderd_player_list[self.current_pos],
+                                          self.small_blind)
+            self.next_player()
+            self.put_players_money_to_pot(self.orderd_player_list[self.current_pos],
+                                          self.big_blind)
+            self.next_player()
+        else:
+            self.next_player()
+            self.put_players_money_to_pot(self.orderd_player_list[self.current_pos],
+                                          self.small_blind)
+            self.next_player()
+            self.put_players_money_to_pot(self.orderd_player_list[self.current_pos],
+                                          self.big_blind)
+            self.next_player()
 
     def count_active_players(self, players):
         return [players[player] for player in players if players[player].seat]
@@ -82,7 +95,23 @@ class Hand:
         return [seats[seat] for seat in seats if seats[seat].state]
 
     def next_player(self):
-        pass
+        self.current_pos = (self.current_pos + 1) % len(self.active_players)
 
+    def put_players_money_to_pot(self, player, cash):
+        if player.money >= cash:
+            player.money = player.money - cash
+            self.players_pots[player.id] += cash
+            self.pot += cash
 
+        else:
+            self.players_pots[player.id] += player.money
+            self.pot += player.money
+            player.money = 0
 
+    def reset_pots(self):
+        self.players_pots = {}
+        for player in self.orderd_player_list:
+            self.players_pots[player.id] = 0
+
+    def return_pots(self):
+        return self.pot, self.players_pots
