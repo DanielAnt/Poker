@@ -5,6 +5,7 @@ class Player():
         self.id = player_id
         self.money = money
         self.cards = []
+        self.active = False
         self.seat = False
 
     def get_card(self,card):
