@@ -20,7 +20,7 @@ class Player():
 
     def stand_up(self):
         if self.seat:
-            self.seat.stand_up()
+            self.seat.stand_up(self)
             self.seat = False
 
 

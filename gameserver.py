@@ -75,64 +75,64 @@ class GameServer:
     def connect_client(self, user, player_id):
         connected = True
         while connected:
-            try:
-                msg_length = user.recv(self.header).decode(self.format)
-                if msg_length:
-                    msg_length = int(msg_length)
-                    msg = user.recv(msg_length).decode(self.format)
-                    if msg == "UPDATE":
-                        self.send_pickle(user, [self.board, self.players[player_id]])
-                    elif msg == "BET":
-                        bet_size = self.recive_message(user)
-                        if self.hand.orderd_player_list[self.hand.current_pos] == self.players[player_id]:
+            #try:
+            msg_length = user.recv(self.header).decode(self.format)
+            if msg_length:
+                msg_length = int(msg_length)
+                msg = user.recv(msg_length).decode(self.format)
+                if msg == "UPDATE":
+                    self.send_pickle(user, [self.board, self.players[player_id]])
+                elif msg == "BET":
+                    bet_size = self.recive_message(user)
+                    if self.hand.players_dict[self.hand.current_pos] == self.players[player_id]:
+                        if float(bet_size) >= self.board.check_size:
                             self.hand.put_players_money_to_pot(self.players[player_id], bet_size)
                             self.hand.next_player()
-                    elif msg == "CHECK":
-                        if self.board.moving_player_seat_id == self.players[player_id].seat.id:
-                            if self.players[player_id].money >= self.hand.check_size:
-                                bet = float(self.hand.check_size) - float(self.board.players_pots[player_id])
-                                self.hand.put_players_money_to_pot(self.players[player_id], bet)
-                            self.hand.next_player()
-                    elif msg == "PASS":
-                        if self.hand.orderd_player_list[self.hand.current_pos] == self.players[player_id]:
-                            self.hand.next_player()
-                    elif msg == "LOGIN":
-                        player_info = self.recive_message(user)
-                        player_id, player_name = player_info.split(";")
-                        self.players[player_id] = Player(player_id, player_name, 100)
-                        self.send_pickle(user, self.players[player_id])
-                    elif msg == "START":
-                        if self.board.active_players > 1 and not self.board.game_status:
-                            self.cards = Cards()
-                            self.cards.schuffle()
-                            self.hand = self.board.start_hand(self.players, self.cards)
-                            self.board.pot, self.board.players_pots = self.hand.return_pots()
+                elif msg == "CHECK":
+                    if self.board.moving_player_seat_id == self.players[player_id].seat.id:
+                        if self.players[player_id].money >= self.board.check_size:
+                            bet = float(self.board.check_size) - float(self.board.players_pots[player_id])
+                            self.hand.put_players_money_to_pot(self.players[player_id], bet)
+                        self.hand.next_player()
+                elif msg == "PASS":
+                    if self.hand.players_dict[self.hand.current_pos] == self.players[player_id]:
+                        self.players[player_id].active = False
+                        self.hand.next_player()
+                elif msg == "LOGIN":
+                    player_info = self.recive_message(user)
+                    player_id, player_name = player_info.split(";")
+                    self.players[player_id] = Player(player_id, player_name, 100)
+                    self.send_pickle(user, self.players[player_id])
+                elif msg == "START":
+                    if self.board.active_players > 1 and not self.board.game_status:
+                        self.cards = Cards()
+                        self.cards.schuffle()
+                        self.hand = self.board.start_hand(self.players, self.cards)
+                        #self.board.pot, self.board.players_pots = self.hand.return_pots()
 
-                    elif msg == "DEALCARDS":
-                        if len(self.board.cards) == 0:
-                            for _ in range(3):
-                                self.board.cards.append(self.cards.deal_card())
-                        elif 5 > len(self.board.cards) > 2:
-                                self.board.cards.append(self.cards.deal_card())
+                elif msg == "DEALCARDS":
+                    if len(self.board.cards) == 0:
+                        for _ in range(3):
+                            self.board.cards.append(self.cards.deal_card())
+                    elif 5 > len(self.board.cards) > 2:
+                            self.board.cards.append(self.cards.deal_card())
 
-
-
-                    elif msg == "SIT":
-                        seat_id = self.recive_message(user)
-                        seat_id = int(seat_id)
-                        if self.board.seats[seat_id].state == False and self.players[player_id].seat == False:
-                            self.board.seats[seat_id].sit_down(self.players[player_id])
-                            self.players[player_id].sit_down(self.board.seats[seat_id])
-                    elif msg == "STANDUP":
-                        self.players[player_id].stand_up()
-                    elif msg == "bye":
-                        connected = False
-                else:
+                elif msg == "SIT":
+                    seat_id = self.recive_message(user)
+                    seat_id = int(seat_id)
+                    if self.board.seats[seat_id].state == False and self.players[player_id].seat == False:
+                        self.board.seats[seat_id].sit_down(self.players[player_id])
+                        self.players[player_id].sit_down(self.board.seats[seat_id])
+                elif msg == "STANDUP":
+                    self.players[player_id].stand_up()
+                elif msg == "bye":
                     connected = False
-            except Exception as e:
-                print(e)
-                print("Error on line {}".format(sys.exc_info()[-1].tb_lineno))
-                break
+            else:
+                connected = False
+    #    except Exception as e:
+     #           print(e)
+      #          print("Error on line {}".format(sys.exc_info()[-1].tb_lineno))
+       #         break
         print(f"{player_id} has disconnected")
         if self.players[player_id].seat:
             self.players[player_id].stand_up()
