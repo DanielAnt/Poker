@@ -19,6 +19,7 @@ class GameServer:
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(self.addr)
         self.players = {}
+        self.hand = None
         print(f'Name={self.name} IP={self.ip} PORT={self.port} has started GAME SERVER')
         self.connect_players()
 
@@ -42,6 +43,22 @@ class GameServer:
         send_length += b' ' * (self.header - len(send_length))
         user.send(send_length)
         user.send(msg)
+
+    def start_hand(self):
+        for player in self.players.values():
+            if player.seat:
+                if self.board.board_player_money[player.seat.id] == 0:
+                    player.stand_up
+        for player in self.players.values():
+            if player.stand_up_queue:
+                player.stand_up()
+
+
+        if self.board.active_players > 1 and not self.board.game_status:
+            self.cards = Cards()
+            self.cards.schuffle()
+            self.hand = self.board.start_hand(self, self.players, self.cards)
+
 
     def authentication(self, user):
         login_client = False
@@ -84,31 +101,24 @@ class GameServer:
                     self.send_pickle(user, [self.board, self.players[player_id]])
                 elif msg == "BET":
                     bet_size = self.recive_message(user)
-                    if self.hand.players_dict[self.hand.current_pos] == self.players[player_id]:
+                    if self.board.moving_player_seat_id == self.players[player_id].seat.id:
                         if float(bet_size) >= self.board.check_size:
                             self.hand.put_players_money_to_pot(self.players[player_id], bet_size)
-                            self.hand.next_player()
                 elif msg == "CHECK":
                     if self.board.moving_player_seat_id == self.players[player_id].seat.id:
                         if self.players[player_id].money >= self.board.check_size:
                             bet = float(self.board.check_size) - float(self.board.players_pots[player_id])
                             self.hand.put_players_money_to_pot(self.players[player_id], bet)
-                        self.hand.next_player()
                 elif msg == "PASS":
-                    if self.hand.players_dict[self.hand.current_pos] == self.players[player_id]:
+                    if self.board.moving_player_seat_id[self.hand.current_pos] == self.players[player_id]:
                         self.players[player_id].active = False
-                        self.hand.next_player()
                 elif msg == "LOGIN":
                     player_info = self.recive_message(user)
                     player_id, player_name = player_info.split(";")
                     self.players[player_id] = Player(player_id, player_name, 100)
                     self.send_pickle(user, self.players[player_id])
                 elif msg == "START":
-                    if self.board.active_players > 1 and not self.board.game_status:
-                        self.cards = Cards()
-                        self.cards.schuffle()
-                        self.hand = self.board.start_hand(self.players, self.cards)
-                        #self.board.pot, self.board.players_pots = self.hand.return_pots()
+                    self.start_hand()
 
                 elif msg == "DEALCARDS":
                     if len(self.board.cards) == 0:
@@ -123,8 +133,16 @@ class GameServer:
                     if self.board.seats[seat_id].state == False and self.players[player_id].seat == False:
                         self.board.seats[seat_id].sit_down(self.players[player_id])
                         self.players[player_id].sit_down(self.board.seats[seat_id])
+
+                elif msg == "SEATBACK":
+                    self.players[player_id].stand_up_queue = False
+
                 elif msg == "STANDUP":
-                    self.players[player_id].stand_up()
+                    if self.players[player_id].active:
+                        self.players[player_id].stand_up_queue = True
+                    else:
+                        self.players[player_id].stand_up()
+
                 elif msg == "bye":
                     connected = False
             else:

@@ -16,6 +16,8 @@ class PokerHand(object):
         mySet, myMainCard, mySupCard, myComb = self.analize_hand(self.hand)
         opSet, opMainCard, opSupCard, opComb = self.analize_hand(other.hand)
 
+        print({mySet},{myMainCard},{mySupCard},{myComb})
+        print({opSet}, {opMainCard}, {opSupCard}, {opComb})
         # DRAWS
         if mySet == opSet:
 
@@ -107,7 +109,6 @@ class PokerHand(object):
                 comb += figur * myFigurs[figur]
                 highestCard = cardValue
 
-        print(comb)
 
         ### STRAIGHT ########
         if comb in Straight:
@@ -156,31 +157,34 @@ class PokerHand(object):
 
         return 0, highestCard, self.card_to_number(comb[3]), comb
 
-player1 = "AH KH QH JH TD TH 9H"
-player2 = "AH KH QH JH TD 3H 9H"
-player3 = "AH KH QH JH TD 2H 9H"
-players_hand = {
-    0: PokerHand(player1),
-    1: PokerHand(player2),
-    2: PokerHand(player3)
+
+if __name__ == '__main__':
+
+    player1 = "AH KH QH JH TD TH 9H"
+    player2 = "AH KH QH JH TD 3H 9H"
+    player3 = "AH KH QH JH TD 2H 9H"
+    players_hand = {
+        0: PokerHand(player1),
+        1: PokerHand(player2),
+        2: PokerHand(player3)
+        }
+    players_score = {
+        0 : 0,
+        1 : 0,
+        2 : 0
     }
-players_score = {
-    0 : 0,
-    1 : 0,
-    2 : 0
-}
 
-matches = list(itertools.combinations(players_hand.keys(), 2))
-for match in matches:
-    p1, p2 = match
-    print(match)
-    result = players_hand[p1].compare_with(players_hand[p2])
-    print(result)
-    if result == "Tie":
-        pass
-    elif result == "Loss":
-        players_score[p2] += 1
-    elif result == "Win":
-        players_score[p1] += 1
+    matches = list(itertools.combinations(players_hand.keys(), 2))
+    for match in matches:
+        p1, p2 = match
+        print(match)
+        result = players_hand[p1].compare_with(players_hand[p2])
+        print(result)
+        if result == "Tie":
+            pass
+        elif result == "Loss":
+            players_score[p2] += 1
+        elif result == "Win":
+            players_score[p1] += 1
 
-print(players_score)
+    print(players_score)

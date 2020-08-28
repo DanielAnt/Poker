@@ -7,6 +7,7 @@ class Player():
         self.cards = []
         self.active = False
         self.seat = False
+        self.stand_up_queue = False
 
     def get_card(self,card):
         self.cards.append(card)
@@ -22,5 +23,6 @@ class Player():
         if self.seat:
             self.seat.stand_up(self)
             self.seat = False
+            self.stand_up_queue = False
 
 
