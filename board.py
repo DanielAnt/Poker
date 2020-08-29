@@ -16,6 +16,7 @@ class Board:
         self.active_players = 0
         self.active_players_ids = []
         self.board_player_money = {}
+        self.players_status = {}
         self.dealer_pos = 1
         self.hand_id = 0
         self.cards = []
@@ -23,11 +24,13 @@ class Board:
         self.players_post_game_cards = {}
         self.check_size = 0
         self.pot = None
-        self.players_pots = None
+        self.players_pots = {}
         self.moving_player_seat_id = None
         self.game_status = False
         for num in range(8):
             self.seats[num] = Seat(self, num)
+            self.players_status[num] = False
+            self.players_pots[num] = 0
 
     def start_hand(self, gameserver, players, cards):
         self.game_status = True
@@ -72,7 +75,11 @@ class Hand:
         self.small_blind = self.master.small_blind
         self.big_blind = self.small_blind * 2
 
-        self.active_seats = self.count_active_seats(self.master.seats)
+        self.all_in_players = []
+        self.all_in_players_subpot = {}
+        self.pot_stages = {
+            0 : 0
+        }
         self.players_cards = {}
         self.players_score = {}
         self.master.pot = 0
@@ -92,16 +99,17 @@ class Hand:
         for pos, seat in self.master.seats.items():
             if seat.state:
                 self.players_dict[pos] = self.players[seat.state["id"]]
-                self.players[seat.state["id"]].active = True
+                self.master.players_status[pos] = True
             else:
                 self.players_dict[pos] = False
+                self.master.players_status[pos] = False
 
-        self.active_players = self.count_active_players(self.players_dict)
+        self.active_players = self.count_active_players()
 
         self.current_pos = self.master.dealer_pos
         self.reset_pots()
 
-        if len(self.active_players) == 2:
+        if self.active_players == 2:
             self.put_players_money_to_pot(self.players_dict[self.current_pos],
                                           self.small_blind)
 
@@ -115,12 +123,12 @@ class Hand:
             self.put_players_money_to_pot(self.players_dict[self.current_pos],
                                           self.big_blind)
             self.last_player = self.current_pos
-            print(self.master.moving_player_seat_id)
+            self.master.moving_player_seat_id = self.current_pos
+
 
 
         ## DEALING CARDS
-        deal_pos = self.master.dealer_pos + 1
-        cards_to_deal = len(self.active_players) * 2
+        cards_to_deal = self.active_players * 2
         seats_len = len(self.players_dict)
         deal_pos = (self.master.dealer_pos + 1) % seats_len
         i = 0
@@ -134,22 +142,30 @@ class Hand:
 
 
 
-    def count_active_players(self, players):
-        return [players[player] for player in players if players[player]]
+    def count_active_players(self):
+        k = 0
+        for status in self.master.players_status.values():
+            if status:
+                k += 1
+        return k
 
     def count_active_seats(self, seats):
         return [seats[seat] for seat in seats if seats[seat].state]
 
     def next_player(self):
-        while True:
-            self.current_pos = (self.current_pos + 1) % len(self.players_dict)
-            if self.current_pos == self.last_player:
-                self.next_stage()
-                break
-            if self.players_dict[self.current_pos]:
-                if self.players_dict[self.current_pos].active:
-                    self.master.moving_player_seat_id = self.current_pos
+        self.active_players = self.count_active_players()
+        if self.active_players > 1:
+            while True:
+                self.current_pos = (self.current_pos + 1) % len(self.players_dict)
+                if self.current_pos == self.last_player:
+                    self.next_stage()
                     break
+                if self.players_dict[self.current_pos]:
+                    if self.master.players_status[self.current_pos] and self.current_pos not in self.all_in_players:
+                        self.master.moving_player_seat_id = self.current_pos
+                        break
+        else:
+            self.next_stage()
 
 
 
@@ -162,6 +178,7 @@ class Hand:
         else:
             self.master.players_pots[player.id] += self.master.board_player_money[player.seat.id]
             self.master.board_player_money[player.seat.id] = 0
+            self.all_in_players.append(player.seat.id)
         if self.master.players_pots[player.id] > self.master.check_size:
             self.master.check_size = self.master.players_pots[player.id]
             self.last_player = self.current_pos
@@ -184,25 +201,50 @@ class Hand:
         elif 5 > len(self.master.cards) > 2:
             self.master.cards.append(self.cards.deal_card())
 
+    def handle_subpots(self):
+        if len(self.all_in_players) > 0:
+            for player_seat in self.all_in_players:
+                if player_seat not in self.all_in_players_subpot:
+                    bet_size = self.master.players_pots[self.players_dict[player_seat]]
+                    last_pot_size = self.pot_stages[max(self.pot_stages.keys())]
+                    self.all_in_players_subpot[player_seat] = last_pot_size
+                    for player_id, pot_size in self.master.players_pots.items():
+                        if pot_size <= bet_size:
+                            self.all_in_players_subpot[player_seat] += pot_size
+                        else:
+                            self.all_in_players_subpot[player_seat] += bet_size
+
 
     def next_stage(self):
+        self.handle_subpots()
+
         for player_id in self.master.players_pots:
             if self.master.players_pots[player_id]:
                 self.master.pot += self.master.players_pots[player_id]
+        self.pot_stages[len(self.pot_stages)] = self.master.pot
         self.reset_pots()
         self.last_player = None
-        self.current_pos = self.master.dealer_pos
-        self.next_player()
-        self.last_player = self.current_pos
+        if self.active_players - len(self.all_in_players) > 1:
+            self.current_pos = self.master.dealer_pos
+            self.next_player()
+            self.last_player = self.current_pos
         self.dealing_cards()
 
     def dealing_cards(self):
-        if len(self.master.cards) == 0:
-            for _ in range(3):
-                self.master.cards.append(self.cards.deal_card())
-        elif 5 > len(self.master.cards) >= 3:
-            self.master.cards.append(self.cards.deal_card())
-        elif len(self.master.cards) == 5:
+        if self.active_players > 1:
+            if self.active_players - len(self.all_inplayers) > 1:
+                if len(self.master.cards) == 0:
+                    for _ in range(3):
+                        self.master.cards.append(self.cards.deal_card())
+                elif 5 > len(self.master.cards) >= 3:
+                    self.master.cards.append(self.cards.deal_card())
+                elif len(self.master.cards) == 5:
+                    start_new_thread(self.end_hand, ())
+            else:
+                while len(self.master.cards) < 5:
+                    self.master.cards.append(self.cards.deal_card())
+                start_new_thread(self.end_hand, ())
+        else:
             start_new_thread(self.end_hand, ())
 
 
@@ -210,18 +252,25 @@ class Hand:
     def find_winner(self):
         self.players_score = {}
         self.players_cards = {}
-        for pos, player in self.players_dict.items():
-            if player:
-                self.players_cards[pos] = PokerHand(pos, player.cards, self.master.cards)
-                self.players_score[pos] = self.players_cards[pos].score
+        if self.active_players > 1:
+            for pos, player in self.players_dict.items():
+                if player:
+                    if self.master.players_status[pos]:
+                        self.players_cards[pos] = PokerHand(pos, player.cards, self.master.cards)
+                        self.players_score[pos] = self.players_cards[pos].score
 
-        winning_player = min(self.players_score, key=self.players_score.get)
-        winning_score = self.players_score[winning_player]
-        winners = []
-        print(winning_player, winning_score, self.players_score)
-        for pos, score in self.players_score.items():
-            if winning_score == score:
-                winners.append(pos)
+            winning_player = min(self.players_score, key=self.players_score.get)
+            winning_score = self.players_score[winning_player]
+            winners = []
+            print(winning_player, winning_score, self.players_score)
+            for pos, score in self.players_score.items():
+                if winning_score == score:
+                    winners.append(pos)
+        else:
+            winners = []
+            for pos, status in self.master.players_status.items():
+                if status:
+                    winners.append(pos)
 
         return winners
 
@@ -237,7 +286,7 @@ class Hand:
     def post_game(self):
         self.master.post_game = True
         for pos, player in self.players_dict.items():
-            if player:
+            if player and self.master.players_status[pos]:
                 self.master.players_post_game_cards[pos] = player.cards
         time.sleep(5)
         self.master.post_game = False
@@ -245,10 +294,9 @@ class Hand:
 
     def end_hand(self):
         winners = self.find_winner()
-
         self.split_pot(winners)
-
-        self.post_game()
+        if self.active_players > 1:
+            self.post_game()
 
         for player in self.players_dict.values():
             if player:

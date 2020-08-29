@@ -4,7 +4,7 @@ from board import *
 from player import *
 from cards import *
 import pickle
-import sys
+
 
 class GameServer:
 
@@ -48,17 +48,15 @@ class GameServer:
         for player in self.players.values():
             if player.seat:
                 if self.board.board_player_money[player.seat.id] == 0:
-                    player.stand_up
+                    player.stand_up()
         for player in self.players.values():
             if player.stand_up_queue:
                 player.stand_up()
-
 
         if self.board.active_players > 1 and not self.board.game_status:
             self.cards = Cards()
             self.cards.schuffle()
             self.hand = self.board.start_hand(self, self.players, self.cards)
-
 
     def authentication(self, user):
         login_client = False
@@ -88,7 +86,6 @@ class GameServer:
             print(f'{user} disconnected')
             user.close()
 
-
     def connect_client(self, user, player_id):
         connected = True
         while connected:
@@ -110,8 +107,12 @@ class GameServer:
                             bet = float(self.board.check_size) - float(self.board.players_pots[player_id])
                             self.hand.put_players_money_to_pot(self.players[player_id], bet)
                 elif msg == "PASS":
-                    if self.board.moving_player_seat_id[self.hand.current_pos] == self.players[player_id]:
-                        self.players[player_id].active = False
+                    if self.board.moving_player_seat_id == self.players[player_id].seat.id:
+                        if self.board.check_size == self.board.players_pots[player_id]:
+                            self.hand.next_player()
+                        else:
+                            self.board.players_status[self.players[player_id].seat.id] = False
+                            self.hand.next_player()
                 elif msg == "LOGIN":
                     player_info = self.recive_message(user)
                     player_id, player_name = player_info.split(";")
@@ -125,12 +126,12 @@ class GameServer:
                         for _ in range(3):
                             self.board.cards.append(self.cards.deal_card())
                     elif 5 > len(self.board.cards) > 2:
-                            self.board.cards.append(self.cards.deal_card())
+                        self.board.cards.append(self.cards.deal_card())
 
                 elif msg == "SIT":
                     seat_id = self.recive_message(user)
                     seat_id = int(seat_id)
-                    if self.board.seats[seat_id].state == False and self.players[player_id].seat == False:
+                    if not self.board.seats[seat_id].state and not self.players[player_id].seat:
                         self.board.seats[seat_id].sit_down(self.players[player_id])
                         self.players[player_id].sit_down(self.board.seats[seat_id])
 
@@ -158,7 +159,6 @@ class GameServer:
         if self.board.active_players < 2:
             self.board.game_status = False
         user.close()
-
 
     def connect_players(self):
         self.server.listen(4)

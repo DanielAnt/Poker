@@ -192,8 +192,13 @@ def main_game(nickname, ip, port, client_id):
                 if board.check_size >= board.board_player_money[player.seat.id]:
                     bet_size = board.board_player_money[player.seat.id]
                 else:
-                    bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) *
+                    if player.id in board.players_pots:
+                        bet_size = (board.check_size - board.players_pots[player.id]) + round((board.board_player_money[player.seat.id] - board.check_size) *
                                                         ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
+                    else:
+                        bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) *
+                            ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
+
                 if bet_size < 0 or "bet_size" not in locals():
                     bet_size = 0
                 bet_size = round(bet_size, 1)
@@ -248,24 +253,37 @@ def main_game(nickname, ip, port, client_id):
                     if board.game_status:
                         if seat.state["id"] == player.id:
                             for i, card in enumerate(player.cards):
-                                card_image = pygame.image.load("PNG/" + card + "_60.png")
-                                card_image_rect = card_image.get_rect()
-                                card_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * iter
-                                if board.players_pots[seat.state["id"]] != 0:
-                                    draw_text(str(board.players_pots[seat.state["id"]])+" $", font, BLACK, screen,
-                                              pot_pos[seat_id][0], pot_pos[seat_id][1])
-                                screen.blit(card_image, card_image_rect)
+                                if board.players_status[seat_id]:
+                                    card_image = pygame.image.load("PNG/" + card + "_60.png")
+                                    card_image_rect = card_image.get_rect()
+                                    card_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * i
+                                    if board.players_pots[seat.state["id"]] != 0:
+                                        draw_text(str(board.players_pots[seat.state["id"]])+" $", font, BLACK, screen,
+                                                  pot_pos[seat_id][0], pot_pos[seat_id][1])
+                                    screen.blit(card_image, card_image_rect)
+                                else:
+                                    card_image = pygame.image.load("PNG/gray_back.png")
+                                    card_image_rect = card_image.get_rect()
+                                    card_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * i
+                                    if board.players_pots[seat.state["id"]] != 0:
+                                        draw_text(str(board.players_pots[seat.state["id"]]) + " $", font, BLACK, screen,
+                                                  pot_pos[seat_id][0], pot_pos[seat_id][1])
+                                    if card_image_rect.collidepoint(mx, my):
+                                        card_image = pygame.image.load("PNG/" + card + "_60.png")
+                                    screen.blit(card_image, card_image_rect)
                         else:
                             for i in range(2):
                                 if board.post_game:
-                                    card_back_image = pygame.image.load("PNG/" +
+                                    if board.players_status[seat_id]:
+                                        card_back_image = pygame.image.load("PNG/" +
                                                                         board.players_post_game_cards[seat_id][i] +
                                                                         "_60.png")
                                 else:
                                     card_back_image = pygame.image.load("PNG/gray_back.png")
-                                card_back_image_rect = card_back_image.get_rect()
-                                card_back_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * iter
-                                screen.blit(card_back_image, card_back_image_rect)
+                                if board.players_status[seat_id]:
+                                    card_back_image_rect = card_back_image.get_rect()
+                                    card_back_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * i
+                                    screen.blit(card_back_image, card_back_image_rect)
                                 if board.players_pots:
                                     if seat.state["id"] in board.players_pots:
                                         if board.players_pots[seat.state["id"]] != 0:
@@ -275,7 +293,10 @@ def main_game(nickname, ip, port, client_id):
                     if seat == player.seat:
                         draw_text(seat.state["name"] + str(seat.id), font, RED, screen, x, y)
                     else:
-                        draw_text(seat.state["name"] + str(seat.id), font, (0, 0, 0), screen, x, y)
+                        if board.players_status[seat_id]:
+                            draw_text(seat.state["name"] + str(seat.id), font, (0, 0, 0), screen, x, y)
+                        else:
+                            draw_text(seat.state["name"] + str(seat.id), font, (192, 192, 192), screen, x, y)
                     draw_text(str(board.board_player_money[seat.id])+" $", font, (0, 0, 0),
                               screen, x, y + deal_dy * (-1))
 
