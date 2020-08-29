@@ -64,7 +64,37 @@ def main_game(nickname, ip, port, client_id):
             pot_y = seat[1] + 0.4 * (cen_y - seat[1])
             pot_pos[pos] = [pot_x, pot_y]
 
-        return seats_pos, pot_pos
+        slider_pos = {}
+        slider_pos['start_x'] = int(width - width * 0.36)
+        slider_pos['start_y'] = int(height - height * 0.1)
+        slider_pos['width'] = int(width * 0.16)
+        slider_pos['height'] = int(height * 0.005)
+        slider_pos['end_x'] = slider_pos['start_x'] + slider_pos['width']
+        slider_pos['range'] = slider_pos['end_x'] - slider_pos['start_x']
+        slider_pos['cen_x'] = int(slider_pos['start_x'] + slider_pos['width'] * 0.5)
+        slider_pos['cen_y'] = slider_pos['start_y']
+
+        buttons_pos = {}
+        buttons_pos['start_x'] = width - width * 0.07
+        buttons_pos['start_y'] = height - height * 0.15
+        buttons_pos['start_width'] = width * 0.06
+        buttons_pos['start_height'] = height * 0.04
+        buttons_pos['stand_height'] = height - height * 0.1
+
+        buttons_pos['bet_rect_x'] = int(width - width * 0.37)
+        buttons_pos['bet_rect_y'] = int(height - height * 0.22)
+        buttons_pos['bet_rect_width'] = int(width * 0.18)
+        buttons_pos['bet_rect_height'] = int(height * 0.2)
+        buttons_pos['bet_x'] = width - width * 0.35
+        buttons_pos['bet_y'] = height - height * 0.2
+        buttons_pos['width'] = width / 25
+        buttons_pos['height'] = height / 25
+        buttons_pos['check_x'] = width - width * 0.30
+        buttons_pos['check_y'] = height - height * 0.2
+        buttons_pos['pass_x'] = width - width * 0.25
+        buttons_pos['pass_y'] =  height - height * 0.2
+
+        return seats_pos, pot_pos, slider_pos, buttons_pos
 
     def create_button(buttons,text, pos, size, color):
         x, y = pos
@@ -90,34 +120,34 @@ def main_game(nickname, ip, port, client_id):
 
             ## STAND UP BUTTON
             if player.seat and not player.stand_up_queue:
-                buttons = create_button(buttons, "STAND UP", (width - width * 0.07, height - height * 0.1),
-                                        (width * 0.06, height * 0.04), WHITE)
+                buttons = create_button(buttons, "STAND UP", (buttons_pos['start_x'], buttons_pos['stand_height']),
+                                        (buttons_pos['start_width'], buttons_pos['start_height']), WHITE)
                 if buttons["STAND UP"].collidepoint(mx, my) and click:
                     stand_up(player.seat)
 
             if player.stand_up_queue:
-                buttons = create_button(buttons, "SEATBACK", (width - width * 0.07, height - height * 0.1),
-                                        (width * 0.06, height * 0.04), WHITE)
+                buttons = create_button(buttons, "SEATBACK", (buttons_pos['start_x'], buttons_pos['stand_height']),
+                                        (buttons_pos['start_width'], buttons_pos['start_height']), WHITE)
                 if buttons["SEATBACK"].collidepoint(mx, my) and click:
                     seat_back()
             ## START GAME
             if board.active_players > 1 and not board.game_status:
-                buttons = create_button(buttons, "START GAME", (width - width * 0.07, height - height * 0.15),
-                                        (width * 0.06, height * 0.04), WHITE)
+                buttons = create_button(buttons, "START GAME", (buttons_pos['start_x'], buttons_pos['start_y']),
+                                        (buttons_pos['start_width'], buttons_pos['start_height']), WHITE)
                 if buttons["START GAME"].collidepoint(mx, my) and click:
                     game_start()
-
+            """
             ## TEST DEAL CARDS
             if board.game_status:
                 buttons = create_button(buttons, "DEALCARDS", (width - width * 0.07, height - height * 0.2),
                                         (width * 0.06, height * 0.04), WHITE)
                 if buttons["DEALCARDS"].collidepoint(mx, my) and click:
                     game_client.send("DEALCARDS")
-
+            """
             ## BOARD DISPLAYING BOARD CARDS AND POT
             if board.game_status and board.cards:
                 card_x, card_y = 600, 388
-                draw_text(str(board.pot) + " $", font, BLACK, screen,  card_x, card_y + 120)
+                draw_text(str(board.pot) + " $", font, BLACK, screen,  width * 0.5, card_y + 160)
                 for dis, card in enumerate(board.cards):
                     board_card_image = pygame.image.load("PNG/"+card+"_60.png")
                     screen.blit(board_card_image, (card_x + 100 * dis, card_y))
@@ -140,39 +170,33 @@ def main_game(nickname, ip, port, client_id):
 
             if player.seat:
                 ## BET RECT
-                betting_rect = pygame.Rect(int(width - width * 0.37), int(height - height * 0.22),
-                                           int(width * 0.18), int(height * 0.2))
+                betting_rect = pygame.Rect(buttons_pos['bet_rect_x'], buttons_pos['bet_rect_y'],
+                                           buttons_pos['bet_rect_width'], buttons_pos['bet_rect_height'])
                 pygame.draw.rect(screen, GREY, betting_rect)
 
                 ## BETTING SILDER
-                slider_start_x = int(width - width * 0.36)
-                slider_start_y = int(height - height * 0.1)
-                slider_width = int(width * 0.16)
-                slider_height = int(height * 0.005)
-                slider_end_x = slider_start_x + slider_width
-                slider_range = slider_end_x - slider_start_x
-                slider_rect = pygame.Rect(slider_start_x, slider_start_y,
-                                          slider_width, slider_height)
-                slider_rect.center = int(slider_start_x + slider_width * 0.5), slider_start_y
-                slider_rect_hitbox = pygame.Rect(slider_start_x,slider_start_y,
-                                                 slider_width+10, slider_height + 25)
-                slider_rect_hitbox.center = int(slider_start_x + slider_width * 0.5), slider_start_y
+                slider_rect = pygame.Rect(slider_pos['start_x'], slider_pos['start_y'],
+                                          slider_pos['width'], slider_pos['height'])
+                slider_rect.center = slider_pos['cen_x'], slider_pos['cen_y']
+                slider_rect_hitbox = pygame.Rect(slider_pos['start_x'], slider_pos['start_y'],
+                                                 slider_pos['width'] + 10, slider_pos['height'] + 25)
+                slider_rect_hitbox.center = slider_pos['cen_x'], slider_pos['start_y']
                 pygame.draw.rect(screen, BLACK, slider_rect)
                 if slider_rect_hitbox.collidepoint(mx, my) and click:
                     dot_x = round(mx,0)
-                    if dot_x < slider_start_x:
-                        dot_x = slider_start_x
-                    if dot_x > slider_end_x:
-                        dot_x = slider_end_x
+                    if dot_x < slider_pos['start_x']:
+                        dot_x = slider_pos['start_x']
+                    if dot_x > slider_pos['end_x']:
+                        dot_x = slider_pos['end_x']
                 if "dot_x" not in locals() or "dot_y" not in locals():
-                    dot_x, dot_y = int(slider_start_x), int(slider_start_y)
+                    dot_x, dot_y = slider_pos['start_x'], slider_pos['start_y']
                 pygame.draw.circle(screen, RED, (dot_x, dot_y), 7)
 
                 ## BET SIZE
                 if board.check_size >= board.board_player_money[player.seat.id]:
                     bet_size = board.board_player_money[player.seat.id]
                 else:
-                    bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) * ((dot_x - slider_start_x) / slider_range), 1)
+                    bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) * ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
                 if bet_size < 0 or "bet_size" not in locals():
                     bet_size = 0
                 draw_text(str(bet_size)+" $", font, BLACK, screen, width - width * 0.34, height - height * 0.13)
@@ -180,18 +204,18 @@ def main_game(nickname, ip, port, client_id):
 
 
                 ## BET BUTTON
-                buttons = create_button(buttons, "BET",(width - width * 0.35, height - height * 0.2),
-                                        (width / 25, height / 25), WHITE)
+                buttons = create_button(buttons, "BET",(buttons_pos['bet_x'], buttons_pos['bet_y']),
+                                        (buttons_pos['width'], buttons_pos['height']), WHITE)
                 if buttons["BET"].collidepoint(mx, my) and click:
                     game_bet(bet_size)
                 ## PASS BUTTON
-                buttons = create_button(buttons, "CHECK", (width - width * 0.30, height - height * 0.2),
-                                        (width / 25, height / 25), WHITE)
+                buttons = create_button(buttons, "CHECK", (buttons_pos['check_x'], buttons_pos['check_y']),
+                                        (buttons_pos['width'], buttons_pos['height']), WHITE)
                 if buttons["CHECK"].collidepoint(mx, my) and click:
                     game_check()
                 ## CHECK BUTTON
-                buttons = create_button(buttons, "PASS", (width - width * 0.25, height - height * 0.2),
-                                        (width / 25, height / 25), WHITE)
+                buttons = create_button(buttons, "PASS", (buttons_pos['pass_x'], buttons_pos['pass_y']),
+                                        (buttons_pos['width'], buttons_pos['height']), WHITE)
                 if buttons["PASS"].collidepoint(mx, my) and click:
                     game_pass()
 
@@ -209,7 +233,6 @@ def main_game(nickname, ip, port, client_id):
                 dx, dy = seat_image.get_rect().size
                 seat_image_rect = seat_image.get_rect()
                 seat_image_rect.center = x, y
-                card_dy = -10
                 if x > width / 2:
                     deal_dx = 35
                     card_dx = -65
@@ -293,7 +316,7 @@ def main_game(nickname, ip, port, client_id):
             size = width, height = 1600, 900
             screen = pygame.display.set_mode(size)
             font = pygame.font.SysFont(None, 20)
-            seats_pos, pot_pos = calculate_seat_pos(width, height)
+            seats_pos, pot_pos, slider_pos, buttons_pos = calculate_seat_pos(width, height)
             table_view()
         else:
             print("Client already connected")

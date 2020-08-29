@@ -1,4 +1,4 @@
-from cardlogic import *
+from cardlogic2 import *
 import itertools
 
 
@@ -210,20 +210,10 @@ class Hand:
         self.players_cards = {}
         for pos, player in self.players_dict.items():
             if player:
-                self.players_cards[pos] = " ".join(self.master.cards)
-                self.players_cards[pos] += " " + " ".join(player.cards)
-                self.players_score[pos] = 0
-                self.players_cards[pos] = PokerHand(self.players_cards[pos])
+                self.players_cards[pos] = PokerHand(pos, player.cards, self.master.cards)
+                self.players_score[pos] = self.players_cards[pos].score
 
-        matches = list(itertools.combinations(self.players_score.keys(),2))
-        for match in matches:
-            p1, p2 = match
-            result = self.players_cards[p1].compare_with((self.players_cards[p2]))
-            if result == "Win":
-                self.players_score[p1] += 1
-            elif result == "Lose":
-                self.players_score[p2] += 1
-        winning_player = max(self.players_score, key=self.players_score.get)
+        winning_player = min(self.players_score, key=self.players_score.get)
         winning_score = self.players_score[winning_player]
         winners = []
         print(winning_player, winning_score, self.players_score)
