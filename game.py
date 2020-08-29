@@ -22,6 +22,7 @@ def main_game(nickname, ip, port, client_id):
 
     def game_bet(bet_size):
         if bet_size > 0:
+            bet_size = round(bet_size, 1)
             game_client.send("BET")
             game_client.send(bet_size)
 
@@ -106,7 +107,6 @@ def main_game(nickname, ip, port, client_id):
         draw_text(text, font, (0, 0, 0), screen, int(x + 0.5 * w), int(y + 0.5 * h))
         return buttons
 
-
     def table_view():
         click = False
         play = True
@@ -159,14 +159,10 @@ def main_game(nickname, ip, port, client_id):
             pygame.draw.rect(screen, WHITE, quit_game_button)
             draw_text("QUIT", font, BLACK, screen, 1540, 120)
 
-
             if player.stand_up_queue:
                 draw_text("You're going to stand up after this hand", font, BLACK, screen, width/2, height/100)
             #### PLAYER MONEY ####
             draw_text(f'{player.name}: {player.money} $', font, BLACK, screen, 45, 20)
-
-
-
 
             if player.seat:
                 ## BET RECT
@@ -183,7 +179,7 @@ def main_game(nickname, ip, port, client_id):
                 slider_rect_hitbox.center = slider_pos['cen_x'], slider_pos['start_y']
                 pygame.draw.rect(screen, BLACK, slider_rect)
                 if slider_rect_hitbox.collidepoint(mx, my) and click:
-                    dot_x = round(mx,0)
+                    dot_x = round(mx, 0)
                     if dot_x < slider_pos['start_x']:
                         dot_x = slider_pos['start_x']
                     if dot_x > slider_pos['end_x']:
@@ -196,15 +192,15 @@ def main_game(nickname, ip, port, client_id):
                 if board.check_size >= board.board_player_money[player.seat.id]:
                     bet_size = board.board_player_money[player.seat.id]
                 else:
-                    bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) * ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
+                    bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) *
+                                                        ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
                 if bet_size < 0 or "bet_size" not in locals():
                     bet_size = 0
+                bet_size = round(bet_size, 1)
                 draw_text(str(bet_size)+" $", font, BLACK, screen, width - width * 0.34, height - height * 0.13)
 
-
-
                 ## BET BUTTON
-                buttons = create_button(buttons, "BET",(buttons_pos['bet_x'], buttons_pos['bet_y']),
+                buttons = create_button(buttons, "BET", (buttons_pos['bet_x'], buttons_pos['bet_y']),
                                         (buttons_pos['width'], buttons_pos['height']), WHITE)
                 if buttons["BET"].collidepoint(mx, my) and click:
                     game_bet(bet_size)
@@ -218,9 +214,6 @@ def main_game(nickname, ip, port, client_id):
                                         (buttons_pos['width'], buttons_pos['height']), WHITE)
                 if buttons["PASS"].collidepoint(mx, my) and click:
                     game_pass()
-
-
-
 
             ## DISPLAYING SEATS, PLAYER CARDS, DEALER CHIP
             for seat_id, seat in board.seats.items():
@@ -254,31 +247,37 @@ def main_game(nickname, ip, port, client_id):
                 if seat.state:
                     if board.game_status:
                         if seat.state["id"] == player.id:
-                            for iter, card in enumerate(player.cards):
+                            for i, card in enumerate(player.cards):
                                 card_image = pygame.image.load("PNG/" + card + "_60.png")
                                 card_image_rect = card_image.get_rect()
-                                card_image_rect.center = x + card_dx + 25 * iter, y + card_dy + 25 * iter
+                                card_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * iter
                                 if board.players_pots[seat.state["id"]] != 0:
                                     draw_text(str(board.players_pots[seat.state["id"]])+" $", font, BLACK, screen,
                                               pot_pos[seat_id][0], pot_pos[seat_id][1])
                                 screen.blit(card_image, card_image_rect)
                         else:
-                            for iter in range(2):
-                                card_back_image = pygame.image.load("PNG/gray_back.png")
+                            for i in range(2):
+                                if board.post_game:
+                                    card_back_image = pygame.image.load("PNG/" +
+                                                                        board.players_post_game_cards[seat_id][i] +
+                                                                        "_60.png")
+                                else:
+                                    card_back_image = pygame.image.load("PNG/gray_back.png")
                                 card_back_image_rect = card_back_image.get_rect()
-                                card_back_image_rect.center = x + card_dx + 25 * iter, y + card_dy + 25 * iter
+                                card_back_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * iter
                                 screen.blit(card_back_image, card_back_image_rect)
                                 if board.players_pots:
                                     if seat.state["id"] in board.players_pots:
                                         if board.players_pots[seat.state["id"]] != 0:
-                                            draw_text(str(board.players_pots[seat.state["id"]]) + " $", font, BLACK, screen,
-                                                      pot_pos[seat_id][0], pot_pos[seat_id][1])
+                                            draw_text(str(board.players_pots[seat.state["id"]]) + " $", font, BLACK,
+                                                      screen, pot_pos[seat_id][0], pot_pos[seat_id][1])
                     screen.blit(seat_image, seat_image_rect)
                     if seat == player.seat:
                         draw_text(seat.state["name"] + str(seat.id), font, RED, screen, x, y)
                     else:
                         draw_text(seat.state["name"] + str(seat.id), font, (0, 0, 0), screen, x, y)
-                    draw_text(str(board.board_player_money[seat.id])+" $", font, (0, 0, 0), screen, x, y + deal_dy * (-1))
+                    draw_text(str(board.board_player_money[seat.id])+" $", font, (0, 0, 0),
+                              screen, x, y + deal_dy * (-1))
 
                 else:
                     screen.blit(seat_image, seat_image_rect)
@@ -306,7 +305,7 @@ def main_game(nickname, ip, port, client_id):
     GREEN = 0, 200, 0
     GREY = 192, 192, 192
     BLACK = 0, 0, 0
-    RED = 255, 0 , 0
+    RED = 255, 0, 0
 
     if ip != "0.0.0.0":
         game_client = GameClient(ip=ip, port=port, client_id=client_id, client_name=nickname)

@@ -1,6 +1,6 @@
 from cardlogic2 import *
-import itertools
-
+import time
+from _thread import *
 
 class Board:
 
@@ -19,6 +19,8 @@ class Board:
         self.dealer_pos = 1
         self.hand_id = 0
         self.cards = []
+        self.post_game = False
+        self.players_post_game_cards = {}
         self.check_size = 0
         self.pot = None
         self.players_pots = None
@@ -201,7 +203,7 @@ class Hand:
         elif 5 > len(self.master.cards) >= 3:
             self.master.cards.append(self.cards.deal_card())
         elif len(self.master.cards) == 5:
-            self.end_hand()
+            start_new_thread(self.end_hand, ())
 
 
 
@@ -223,8 +225,7 @@ class Hand:
 
         return winners
 
-    def end_hand(self):
-        winners = self.find_winner()
+    def split_pot(self, winners):
         if len(winners) > 1:
             split_pot = self.master.pot / len(winners)
             split_pot = round(split_pot, 1)
@@ -232,6 +233,22 @@ class Hand:
                 self.master.board_player_money[winner] += split_pot
         else:
             self.master.board_player_money[winners[0]] += round(self.master.pot, 1)
+
+    def post_game(self):
+        self.master.post_game = True
+        for pos, player in self.players_dict.items():
+            if player:
+                self.master.players_post_game_cards[pos] = player.cards
+        time.sleep(5)
+        self.master.post_game = False
+        self.master.players_post_game_cards = {}
+
+    def end_hand(self):
+        winners = self.find_winner()
+
+        self.split_pot(winners)
+
+        self.post_game()
 
         for player in self.players_dict.values():
             if player:
