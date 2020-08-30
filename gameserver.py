@@ -94,18 +94,18 @@ class GameServer:
                     elif msg == "BET":
                         bet_size = self.recive_message(user)
                         if self.board.moving_player_seat_id == self.players[player_id].seat.id:
-                            if float(bet_size) >= self.board.check_size:
+                            if float(bet_size) >= self.board.check_size - self.board.players_pots[player_id]:
                                 self.hand.put_players_money_to_pot(self.players[player_id], bet_size)
 
                     elif msg == "CHECK":
                         if self.board.moving_player_seat_id == self.players[player_id].seat.id:
-                            if self.players[player_id].money >= self.board.check_size:
+                            if self.board.board_player_money[self.players[player_id].seat.id] >= self.board.check_size - self.board.players_pots[player_id]:
                                 bet = float(self.board.check_size) - float(self.board.players_pots[player_id])
                                 self.hand.put_players_money_to_pot(self.players[player_id], bet)
                             else:
-                                if self.players[player_id].money > 0:
+                                if self.board.board_player_money[self.players[player_id].seat.id] > 0:
                                     self.hand.put_players_money_to_pot(self.players[player_id],
-                                                                       self.board.players_pots[player_id])
+                                                                       self.board.board_player_money[self.players[player_id].seat.id])
                     elif msg == "PASS":
                         if self.board.moving_player_seat_id == self.players[player_id].seat.id:
                             if self.board.check_size == self.board.players_pots[player_id]:
@@ -174,4 +174,4 @@ class GameServer:
 
 if __name__ == '__main__':
 
-    GameServer("test", "192.168.1.132", 16001, 10000, 100, 200, 2)
+    GameServer("test", "192.168.1.132", 16001, 10000, 20, 40, 2)

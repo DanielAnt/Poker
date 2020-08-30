@@ -179,7 +179,6 @@ class Hand:
                                                              - cash
             self.master.players_pots[player.id] += cash
         else:
-            print("ALL IN", player.seat.id)
             self.master.players_pots[player.id] += self.master.board_player_money[player.seat.id]
             self.master.board_player_money[player.seat.id] = 0
             self.all_in_players.append(player.seat.id)
@@ -220,7 +219,6 @@ class Hand:
                             self.all_in_players_subpot[player_seat] += pot_size
                         else:
                             self.all_in_players_subpot[player_seat] += bet_size
-
     # DEALING CARDS TO BOARD
     def dealing_cards(self):
         if self.active_players > 1:
@@ -249,6 +247,7 @@ class Hand:
 
     # ENDS HAND
     def end_hand(self):
+        self.handle_subpots()
         if len(self.all_in_players_subpot) == 0:
             winners = self.find_winner()
             self.split_pot(winners, self.master.pot)
@@ -290,7 +289,6 @@ class Hand:
             winning_player = min(self.players_score, key=self.players_score.get)
             winning_score = self.players_score[winning_player]
             winners = []
-            print(winning_player, winning_score, self.players_score)
             for pos, score in self.players_score.items():
                 if winning_score == score:
                     winners.append(pos)
@@ -304,6 +302,7 @@ class Hand:
         return winners
 
     def split_pot(self, winners, pot):
+        print(f'player {winners}, won {pot}')
         self.handed_out_pot += pot
         if len(winners) > 1:
             split_pot = pot / len(winners)
