@@ -1,5 +1,7 @@
 import socket
-class LobbyClient():
+
+
+class LobbyClient:
 
     def __init__(self, ip=None, port=None):
         if ip and port:
@@ -15,7 +17,7 @@ class LobbyClient():
         self.send("REFRESH")
         return self.recive()
 
-    def send(self,message):
+    def send(self, message):
         msg = message.encode(self.format)
         msg_length = len(msg)
         send_length = str(msg_length).encode(self.format)
@@ -26,18 +28,9 @@ class LobbyClient():
     def recive(self):
         msg_length = self.client.recv(self.header).decode(self.format)
         msg_length = int(msg_length)
-
-        #msg = self.client.recv(msg_length).decode(self.format)
         msg = self.client.recv(msg_length)
         try:
             if msg.decode(self.format) == "empty":
                 return "empty"
         except UnicodeDecodeError:
             return msg
-
-
-
-
-
-
-#c = LobbyClient(ip="192.168.1.132", port=16000)

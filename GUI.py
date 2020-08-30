@@ -94,7 +94,8 @@ class GUI:
             games_id_label = Label(games_frame, text="ID", bg=self.bgColor)
             games_id_entry = Entry(games_frame, justify="left", width=15)
             games_join_button = Button(games_frame, text="JOIN", width=11,
-                                       command=lambda: start_new_thread(self.join_game, (games_nickname_entry.get(),games_id_entry.get())))
+                                       command=lambda: start_new_thread(self.join_game, (games_nickname_entry.get(),
+                                                                                         games_id_entry.get())))
             games_refresh_button = Button(games_frame, text="REFRESH", width=11, command=self.refresh)
 
             self.games_listbox.grid(row=0, column=0, columnspan=2, pady=10, padx=5)

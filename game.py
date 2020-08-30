@@ -93,11 +93,11 @@ def main_game(nickname, ip, port, client_id):
         buttons_pos['check_x'] = width - width * 0.30
         buttons_pos['check_y'] = height - height * 0.2
         buttons_pos['pass_x'] = width - width * 0.25
-        buttons_pos['pass_y'] =  height - height * 0.2
+        buttons_pos['pass_y'] = height - height * 0.2
 
         return seats_pos, pot_pos, slider_pos, buttons_pos
 
-    def create_button(buttons,text, pos, size, color):
+    def create_button(buttons, text, pos, size, color):
         x, y = pos
         x, y = int(x), int(y)
         w, h = size
@@ -193,10 +193,12 @@ def main_game(nickname, ip, port, client_id):
                     bet_size = board.board_player_money[player.seat.id]
                 else:
                     if player.id in board.players_pots:
-                        bet_size = (board.check_size - board.players_pots[player.id]) + round((board.board_player_money[player.seat.id] - board.check_size) *
-                                                        ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
+                        bet_size = (board.check_size - board.players_pots[player.id]) + \
+                                   round((board.board_player_money[player.seat.id] - board.check_size) *
+                                    ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
                     else:
-                        bet_size = board.check_size + round((board.board_player_money[player.seat.id] - board.check_size) *
+                        bet_size = board.check_size + round((board.board_player_money[player.seat.id] -
+                                                             board.check_size) *
                             ((dot_x - slider_pos['start_x']) / slider_pos['range']), 1)
 
                 if bet_size < 0 or "bet_size" not in locals():
@@ -276,8 +278,8 @@ def main_game(nickname, ip, port, client_id):
                                 if board.post_game:
                                     if board.players_status[seat_id]:
                                         card_back_image = pygame.image.load("PNG/" +
-                                                                        board.players_post_game_cards[seat_id][i] +
-                                                                        "_60.png")
+                                                                            board.players_post_game_cards[seat_id][i] +
+                                                                            "_60.png")
                                 else:
                                     card_back_image = pygame.image.load("PNG/gray_back.png")
                                 if board.players_status[seat_id]:

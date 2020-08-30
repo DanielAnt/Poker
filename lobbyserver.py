@@ -45,16 +45,6 @@ class LobbyServer:
                             user.send(msg)
                     elif msg == "NEWTABLE":
                         self.create_new_table(user)
-                """ 
-                print(msg)
-                message = "Message "
-                msg = message.encode(FORMAT)
-                msg_length = len(msg)
-                send_length = str(msg_length).encode(FORMAT)
-                send_length += b' ' * (64 - len(send_length))
-                conn.send(send_length)
-                conn.send(msg)
-                """
             except Exception as e:
                 print(e)
                 break

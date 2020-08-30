@@ -1,7 +1,7 @@
 import random
 
-class Cards():
 
+class Cards:
 
     def __init__(self):
         colors = [
@@ -31,12 +31,8 @@ class Cards():
             for color in colors:
                 self.deck.append(figur+color)
 
-    def  schuffle(self):
+    def schuffle(self):
         random.shuffle(self.deck)
 
     def deal_card(self):
         return self.deck.pop()
-
-
-
-

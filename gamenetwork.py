@@ -1,7 +1,8 @@
 import socket
 import pickle
 
-class GameClient():
+
+class GameClient:
 
     def __init__(self, ip=None, port=None, client_id="100", client_name="ANDY"):
         if ip and port:
@@ -16,7 +17,6 @@ class GameClient():
             self.client.connect(self.addr)
         else:
             print("WRONG IP AND PASSWORD")
-
 
     def login(self):
         self.send("LOGIN")
@@ -40,9 +40,7 @@ class GameClient():
         recived_message = pickle.loads(self.client.recv(msg_length))
         return recived_message
 
-
-
-    def send(self,message):
+    def send(self, message):
         message = str(message)
         msg = message.encode(self.format)
         msg_length = len(msg)
@@ -60,10 +58,3 @@ class GameClient():
 
     def disconnect(self):
         self.client.close()
-
-
-
-#new_client = Lobby_client(ip="192.168.1.132", port=16000)
-
-
-
