@@ -106,6 +106,9 @@ class GameServer:
                         if self.players[player_id].money >= self.board.check_size:
                             bet = float(self.board.check_size) - float(self.board.players_pots[player_id])
                             self.hand.put_players_money_to_pot(self.players[player_id], bet)
+                        else:
+                            if self.players[player_id].money > 0:
+                                self.hand.put_players_money_to_pot(self.players[player_id], self.board.players_pots[player_id])
                 elif msg == "PASS":
                     if self.board.moving_player_seat_id == self.players[player_id].seat.id:
                         if self.board.check_size == self.board.players_pots[player_id]:
