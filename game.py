@@ -73,6 +73,11 @@ def main_game(nickname, ip, port, client_id):
         slider_pos['cen_x'] = int(slider_pos['start_x'] + slider_pos['width'] * 0.5)
         slider_pos['cen_y'] = slider_pos['start_y']
 
+        slider_pos['buyin_cen_x'] = int(cen_x)
+        slider_pos['buyin_cen_y'] = int(cen_y)
+
+
+
         buttons_pos = {}
         buttons_pos['start_x'] = width - width * 0.07
         buttons_pos['start_y'] = height - height * 0.15
@@ -93,6 +98,17 @@ def main_game(nickname, ip, port, client_id):
         buttons_pos['pass_x'] = width - width * 0.25
         buttons_pos['pass_y'] = height - height * 0.2
 
+        buttons_pos["seat_window_x"] = int(cen_x)
+        buttons_pos["seat_window_y"] = int(cen_y)
+        buttons_pos["seat_window_width"] = int(width / 5)
+        buttons_pos["seat_window_height"] = int(height / 5)
+
+        buttons_pos["seat_conf_x"] = buttons_pos["seat_window_x"] - (width / 20)
+        buttons_pos["seat_conf_y"] = buttons_pos["seat_window_y"] + (height / 20)
+
+        buttons_pos["seat_cancel_x"] = buttons_pos["seat_window_x"] + (width / 20)
+        buttons_pos["seat_cancel_y"] = buttons_pos["seat_window_y"] + (height / 20)
+
         return seats_pos, pot_pos, slider_pos, buttons_pos
 
     def create_button(buttons, text, pos, size, color):
@@ -105,8 +121,23 @@ def main_game(nickname, ip, port, client_id):
         draw_text(text, font, (0, 0, 0), screen, int(x + 0.5 * w), int(y + 0.5 * h))
         return buttons
 
+    def create_button_center(buttons, text, pos, size, color):
+        x, y = pos
+        x, y = int(x), int(y)
+        w, h = size
+        w, h = int(w), int(h)
+        buttons[text] = pygame.Rect(x, y, w, h)
+        buttons[text].center = x, y
+        pygame.draw.rect(screen, color, buttons[text])
+        draw_text(text, font, (0, 0, 0), screen, int(x), int(y))
+        return buttons
+
     def table_view():
         click = False
+        show_seat_window = False
+        chosen_seat = False
+        click_mx = 0
+        click_my = 0
         play = True
         while play:
             buttons = {}
@@ -114,6 +145,9 @@ def main_game(nickname, ip, port, client_id):
 
             screen.fill(GREEN)
             mx, my = pygame.mouse.get_pos()
+
+            if click:
+                click_mx, click_my = mx, my
 
             # BUTTONS
             # STAND UP BUTTON
@@ -299,7 +333,49 @@ def main_game(nickname, ip, port, client_id):
                     draw_text("Empty", font, (0, 0, 0), screen, x, y)
                     if not player.seat:
                         if seat_image_rect.collidepoint(mx, my) and click:
-                            take_a_seat(seat.id)
+                            if not player.seat:
+                                show_seat_window = True
+                                #take_a_seat(seat.id)
+                                chosen_seat = seat
+
+            if show_seat_window:
+                seat_window = pygame.Rect(buttons_pos["seat_window_x"], buttons_pos["seat_window_y"],
+                                          buttons_pos["seat_window_width"], buttons_pos["seat_window_height"])
+                seat_window.center = buttons_pos["seat_window_x"], buttons_pos["seat_window_y"]
+                pygame.draw.rect(screen, GREY, seat_window)
+                buttons = create_button_center(buttons, "SEAT", (buttons_pos["seat_conf_x"], buttons_pos["seat_conf_y"]),
+                            (buttons_pos['width'], buttons_pos['height']), WHITE)
+
+                if buttons["SEAT"].collidepoint(mx, my) and click:
+                    if chosen_seat:
+                        take_a_seat(chosen_seat.id)
+                        show_seat_window = False
+
+                buttons = create_button_center(buttons, "CANCEL", (buttons_pos["seat_cancel_x"], buttons_pos["seat_cancel_y"]),
+                                        (buttons_pos['width'], buttons_pos['height']), WHITE)
+
+                if buttons["CANCEL"].collidepoint(mx, my) and click:
+                    show_seat_window = False
+                    chosen_seat = False
+
+                buyin_slider_rect = pygame.Rect(0, 0,
+                                          slider_pos['width'], slider_pos['height'])
+                buyin_slider_rect.center = slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y']
+                buyin_slider_rect_hitbox = pygame.Rect(slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y'],
+                                                 slider_pos['width'] + 10, slider_pos['height'] + 25)
+                buyin_slider_rect_hitbox.center = slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y']
+                pygame.draw.rect(screen, BLACK, buyin_slider_rect)
+                if buyin_slider_rect_hitbox.collidepoint(mx, my) and click:
+                    dot_x2 = round(mx, 0)
+                    if dot_x2 < slider_pos['start_x']:
+                        dot_x2 = slider_pos['start_x']
+                    if dot_x2 > slider_pos['end_x']:
+                        dot_x2 = slider_pos['end_x']
+                if "dot_x2" not in locals() or "dot_y2" not in locals():
+                    dot_x2, dot_y2 = slider_pos['start_x'], slider_pos['start_y']
+                pygame.draw.circle(screen, RED, (dot_x2, dot_y2), 7)
+
+
 
             click = False
             pygame.display.flip()
