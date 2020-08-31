@@ -101,7 +101,7 @@ class GameServer:
                         if self.board.moving_player_seat_id == self.players[player_id].seat.id:
                             if self.board.board_player_money[self.players[player_id].seat.id] >= \
                                     self.board.check_size - self.board.players_pots[player_id]:
-                                bet = float(self.board.check_size) - float(self.board.players_pots[player_id])
+                                bet = round(float(self.board.check_size) - float(self.board.players_pots[player_id]), 1)
                                 self.hand.put_players_money_to_pot(self.players[player_id], bet)
                             else:
                                 if self.board.board_player_money[self.players[player_id].seat.id] > 0:
@@ -127,11 +127,9 @@ class GameServer:
 
                     elif msg == "SIT":
                         message = self.recive_message(user)
-                        print(message)
                         seat_id, buy_in_size = message.split(";")
                         seat_id = int(seat_id)
                         buy_in_size = float(buy_in_size)
-                        print(type(seat_id), buy_in_size)
                         if not self.board.seats[seat_id].state and not self.players[player_id].seat:
                             self.board.seats[seat_id].sit_down(self.players[player_id], buy_in_size)
                             self.players[player_id].sit_down(self.board.seats[seat_id])

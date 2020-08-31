@@ -21,6 +21,7 @@ class Board:
         self.players_status = {}
         self.cards = []
         self.post_game = False
+        self.prize = {}
         self.players_post_game_cards = {}
         self.check_size = 0
         self.pot = None
@@ -173,17 +174,18 @@ class Hand:
             self.next_stage()
 
     def put_players_money_to_pot(self, player, cash):
-        cash = float(cash)
+        cash = round(float(cash), 1)
+        print(cash, self.master.pot)
         if self.master.board_player_money[player.seat.id] > cash:
-            self.master.board_player_money[player.seat.id] = self.master.board_player_money[player.seat.id]\
-                                                             - cash
-            self.master.players_pots[player.id] += cash
+            self.master.board_player_money[player.seat.id] = round(self.master.board_player_money[player.seat.id]\
+                                                             - cash, 1)
+            self.master.players_pots[player.id] = round(self.master.players_pots[player.id] + cash, 1)
         else:
-            self.master.players_pots[player.id] += self.master.board_player_money[player.seat.id]
+            self.master.players_pots[player.id] += round(self.master.board_player_money[player.seat.id], 1)
             self.master.board_player_money[player.seat.id] = 0
             self.all_in_players.append(player.seat.id)
         if self.master.players_pots[player.id] > self.master.check_size:
-            self.master.check_size = self.master.players_pots[player.id]
+            self.master.check_size = round(self.master.players_pots[player.id], 1)
             self.last_player = self.current_pos
         self.next_player()
 
@@ -192,7 +194,7 @@ class Hand:
         self.handle_subpots()
         for player_id in self.master.players_pots:
             if self.master.players_pots[player_id]:
-                self.master.pot += self.master.players_pots[player_id]
+                self.master.pot = round(self.master.pot + self.master.players_pots[player_id], 1)
         self.pot_stages[len(self.pot_stages)] = self.master.pot
         self.reset_pots()
         self.last_player = None
@@ -303,14 +305,20 @@ class Hand:
 
     def split_pot(self, winners, pot):
         print(f'player {winners}, won {pot}')
-        self.handed_out_pot += pot
+        self.handed_out_pot += round(pot, 1)
         if len(winners) > 1:
             split_pot = pot / len(winners)
             split_pot = round(split_pot, 1)
             for winner in winners:
                 self.master.board_player_money[winner] += split_pot
+                if winner not in self.master.prize:
+                    self.master.prize[winner] = 0
+                self.master.prize[winner] += split_pot
         else:
             self.master.board_player_money[winners[0]] += round(pot, 1)
+            if winners[0] not in self.master.prize:
+                self.master.prize[winners[0]] = 0
+            self.master.prize[winners[0]] += round(pot, 1)
 
     # INIT SHOWDOWN
     def post_game(self):
@@ -321,3 +329,4 @@ class Hand:
         time.sleep(5)
         self.master.post_game = False
         self.master.players_post_game_cards = {}
+        self.master.prize = {}

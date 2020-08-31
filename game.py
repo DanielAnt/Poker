@@ -67,7 +67,7 @@ def main_game(nickname, ip, port, client_id):
 
         slider_pos = {}
         slider_pos['start_x'] = int(width - width * 0.36)
-        slider_pos['start_y'] = int(height - height * 0.1)
+        slider_pos['start_y'] = int(height - height * 0.06)
         slider_pos['width'] = int(width * 0.16)
         slider_pos['height'] = int(height * 0.005)
         slider_pos['end_x'] = slider_pos['start_x'] + slider_pos['width']
@@ -92,17 +92,17 @@ def main_game(nickname, ip, port, client_id):
         buttons_pos['stand_height'] = height - height * 0.1
 
         buttons_pos['bet_rect_x'] = int(width - width * 0.37)
-        buttons_pos['bet_rect_y'] = int(height - height * 0.22)
+        buttons_pos['bet_rect_y'] = int(height - height * 0.16)
         buttons_pos['bet_rect_width'] = int(width * 0.18)
-        buttons_pos['bet_rect_height'] = int(height * 0.2)
+        buttons_pos['bet_rect_height'] = int(height * 0.15)
         buttons_pos['bet_x'] = int(width - width * 0.35)
-        buttons_pos['bet_y'] = int(height - height * 0.2)
+        buttons_pos['bet_y'] = int(height - height * 0.14)
         buttons_pos['width'] = int(width / 25)
         buttons_pos['height'] = int(height / 25)
         buttons_pos['check_x'] = int(width - width * 0.30)
-        buttons_pos['check_y'] = int(height - height * 0.2)
+        buttons_pos['check_y'] = int(height - height * 0.14)
         buttons_pos['pass_x'] = int(width - width * 0.25)
-        buttons_pos['pass_y'] = int(height - height * 0.2)
+        buttons_pos['pass_y'] = int(height - height * 0.14)
 
         buttons_pos["seat_window_x"] = int(cen_x)
         buttons_pos["seat_window_y"] = int(cen_y)
@@ -241,14 +241,24 @@ def main_game(nickname, ip, port, client_id):
                 if bet_size < 0 or "bet_size" not in locals():
                     bet_size = 0
                 bet_size = round(bet_size, 1)
-                draw_text(str(bet_size)+" $", font, BLACK, screen, width - width * 0.34, height - height * 0.13)
+                draw_text(str(bet_size)+" $", font, BLACK, screen, buttons_pos['pass_x'], height - height * 0.03)
 
                 # BET BUTTON
-                buttons = create_button(buttons, "BET", (buttons_pos['bet_x'], buttons_pos['bet_y']),
-                                        (buttons_pos['width'], buttons_pos['height']), WHITE)
-                if buttons["BET"].collidepoint(mx, my) and click:
-                    if bet_size >= board.check_size:
-                        game_bet(bet_size)
+                if player.seat.id in board.players_pots:
+                    current_money = board.board_player_money[player.seat.id] - board.players_pots[player.seat.id]
+                else:
+                    current_money = board.board_player_money[player.seat.id]
+                if board.check_size >= current_money:
+                    buttons = create_button(buttons, "ALL-IN", (buttons_pos['bet_x'], buttons_pos['bet_y']),
+                                            (buttons_pos['width'], buttons_pos['height']), WHITE)
+                    if buttons["ALL-IN"].collidepoint(mx, my) and click:
+                            game_check()
+                else:
+                    buttons = create_button(buttons, "BET", (buttons_pos['bet_x'], buttons_pos['bet_y']),
+                                            (buttons_pos['width'], buttons_pos['height']), WHITE)
+                    if buttons["BET"].collidepoint(mx, my) and click:
+                        if bet_size >= board.check_size - board.board_player_money[player.seat.id]:
+                            game_bet(bet_size)
                 # PASS BUTTON
                 buttons = create_button(buttons, "CHECK", (buttons_pos['check_x'], buttons_pos['check_y']),
                                         (buttons_pos['width'], buttons_pos['height']), WHITE)
@@ -318,6 +328,9 @@ def main_game(nickname, ip, port, client_id):
                                         card_back_image = pygame.image.load("PNG/" +
                                                                             board.players_post_game_cards[seat_id][i] +
                                                                             "_60.png")
+                                        if seat_id in board.prize:
+                                            draw_text(f'{round(board.board_player_money[seat_id]-board.prize[seat_id], 1)} $ + {board.prize[seat_id]} $', font, BLACK, screen,
+                                                  x, int(y + deal_dy * (-1.5)))
                                 else:
                                     card_back_image = pygame.image.load("PNG/gray_back.png")
                                 if board.players_status[seat_id]:
@@ -331,14 +344,15 @@ def main_game(nickname, ip, port, client_id):
                                                       screen, pot_pos[seat_id][0], pot_pos[seat_id][1])
                     screen.blit(seat_image, seat_image_rect)
                     if seat == player.seat:
-                        draw_text(seat.state["name"] + str(seat.id), font, RED, screen, x, y)
+                        draw_text(seat.state["name"], font, RED, screen, x, y)
                     else:
                         if board.players_status[seat_id]:
-                            draw_text(seat.state["name"] + str(seat.id), font, (0, 0, 0), screen, x, y)
+                            draw_text(seat.state["name"], font, (0, 0, 0), screen, x, y)
                         else:
-                            draw_text(seat.state["name"] + str(seat.id), font, (192, 192, 192), screen, x, y)
-                    draw_text(str(board.board_player_money[seat.id])+" $", font, (0, 0, 0),
-                              screen, x, y + deal_dy * (-1))
+                            draw_text(seat.state["name"], font, (192, 192, 192), screen, x, y)
+                    if  seat.id not in board.prize:
+                        draw_text(f'{board.board_player_money[seat.id]} $', font, (0, 0, 0),
+                              screen, x, int(y + deal_dy * (-1.5)))
 
                 else:
                     screen.blit(seat_image, seat_image_rect)
@@ -418,7 +432,7 @@ def main_game(nickname, ip, port, client_id):
     player = game_client.login()
     if player:
         pygame.init()
-        size = width, height = 800, 450
+        size = width, height = 1600, 900
         screen = pygame.display.set_mode(size)
         font_size = int(round(1/80 * width, 0))
 
