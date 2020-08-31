@@ -114,6 +114,8 @@ class GUI:
         if name and min_buy_in and max_buy_in and blind:
             if 3 < len(name) < 12 and min_buy_in.isdigit() and max_buy_in.isdigit() and blind.isdigit():
                 self.client.send("NEWTABLE")
+                if max_buy_in < min_buy_in:
+                    max_buy_in = min_buy_in
                 self.client.send(f"{name};{min_buy_in};{max_buy_in};{blind}")
             else:
                 messagebox.showerror(title="Error", message="Something wrong with options")

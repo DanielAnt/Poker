@@ -4,9 +4,11 @@ from gamenetwork import *
 
 def main_game(nickname, ip, port, client_id):
 
-    def take_a_seat(seat_id):
-        game_client.send("SIT")
-        game_client.send(seat_id)
+    def take_a_seat(seat, buy_in_size):
+        if not seat.state:
+            game_client.send("SIT")
+            message = f'{seat.id};{buy_in_size}'
+            game_client.send(message)
 
     def stand_up(seat):
         if seat:
@@ -75,6 +77,10 @@ def main_game(nickname, ip, port, client_id):
 
         slider_pos['buyin_cen_x'] = int(cen_x)
         slider_pos['buyin_cen_y'] = int(cen_y)
+        slider_pos['buyin_start_x'] = int(slider_pos['buyin_cen_x'] - slider_pos['width'] / 2)
+        slider_pos['buyin_end_x'] = int(slider_pos['buyin_cen_x'] + slider_pos['width'] / 2)
+        slider_pos['buyin_range'] = int(slider_pos['buyin_end_x'] - slider_pos['buyin_start_x'])
+
 
 
 
@@ -89,25 +95,25 @@ def main_game(nickname, ip, port, client_id):
         buttons_pos['bet_rect_y'] = int(height - height * 0.22)
         buttons_pos['bet_rect_width'] = int(width * 0.18)
         buttons_pos['bet_rect_height'] = int(height * 0.2)
-        buttons_pos['bet_x'] = width - width * 0.35
-        buttons_pos['bet_y'] = height - height * 0.2
-        buttons_pos['width'] = width / 25
-        buttons_pos['height'] = height / 25
-        buttons_pos['check_x'] = width - width * 0.30
-        buttons_pos['check_y'] = height - height * 0.2
-        buttons_pos['pass_x'] = width - width * 0.25
-        buttons_pos['pass_y'] = height - height * 0.2
+        buttons_pos['bet_x'] = int(width - width * 0.35)
+        buttons_pos['bet_y'] = int(height - height * 0.2)
+        buttons_pos['width'] = int(width / 25)
+        buttons_pos['height'] = int(height / 25)
+        buttons_pos['check_x'] = int(width - width * 0.30)
+        buttons_pos['check_y'] = int(height - height * 0.2)
+        buttons_pos['pass_x'] = int(width - width * 0.25)
+        buttons_pos['pass_y'] = int(height - height * 0.2)
 
         buttons_pos["seat_window_x"] = int(cen_x)
         buttons_pos["seat_window_y"] = int(cen_y)
         buttons_pos["seat_window_width"] = int(width / 5)
         buttons_pos["seat_window_height"] = int(height / 5)
 
-        buttons_pos["seat_conf_x"] = buttons_pos["seat_window_x"] - (width / 20)
-        buttons_pos["seat_conf_y"] = buttons_pos["seat_window_y"] + (height / 20)
+        buttons_pos["seat_conf_x"] = int(buttons_pos["seat_window_x"] - (width / 20))
+        buttons_pos["seat_conf_y"] = int(buttons_pos["seat_window_y"] + (height / 20))
 
-        buttons_pos["seat_cancel_x"] = buttons_pos["seat_window_x"] + (width / 20)
-        buttons_pos["seat_cancel_y"] = buttons_pos["seat_window_y"] + (height / 20)
+        buttons_pos["seat_cancel_x"] = int(buttons_pos["seat_window_x"] + (width / 20))
+        buttons_pos["seat_cancel_y"] = int(buttons_pos["seat_window_y"] + (height / 20))
 
         return seats_pos, pot_pos, slider_pos, buttons_pos
 
@@ -138,6 +144,11 @@ def main_game(nickname, ip, port, client_id):
         chosen_seat = False
         click_mx = 0
         click_my = 0
+        dot_x = int(slider_pos["start_x"])
+        dot_y = int(slider_pos["start_y"])
+        dot_x2 = int(slider_pos["buyin_start_x"])
+        dot_y2 = int(slider_pos["buyin_cen_y"])
+
         play = True
         while play:
             buttons = {}
@@ -236,7 +247,8 @@ def main_game(nickname, ip, port, client_id):
                 buttons = create_button(buttons, "BET", (buttons_pos['bet_x'], buttons_pos['bet_y']),
                                         (buttons_pos['width'], buttons_pos['height']), WHITE)
                 if buttons["BET"].collidepoint(mx, my) and click:
-                    game_bet(bet_size)
+                    if bet_size >= board.check_size:
+                        game_bet(bet_size)
                 # PASS BUTTON
                 buttons = create_button(buttons, "CHECK", (buttons_pos['check_x'], buttons_pos['check_y']),
                                         (buttons_pos['width'], buttons_pos['height']), WHITE)
@@ -309,7 +321,7 @@ def main_game(nickname, ip, port, client_id):
                                 else:
                                     card_back_image = pygame.image.load("PNG/gray_back.png")
                                 if board.players_status[seat_id]:
-                                    card_back_image_rect = card_back_image.get_rect()
+                                    card_back_image_rect =  card_back_image.get_rect()
                                     card_back_image_rect.center = x + card_dx + 25 * i, y + card_dy + 25 * i
                                     screen.blit(card_back_image, card_back_image_rect)
                                 if board.players_pots:
@@ -335,46 +347,49 @@ def main_game(nickname, ip, port, client_id):
                         if seat_image_rect.collidepoint(mx, my) and click:
                             if not player.seat:
                                 show_seat_window = True
-                                #take_a_seat(seat.id)
                                 chosen_seat = seat
 
             if show_seat_window:
+                # BACKGROUND
                 seat_window = pygame.Rect(buttons_pos["seat_window_x"], buttons_pos["seat_window_y"],
                                           buttons_pos["seat_window_width"], buttons_pos["seat_window_height"])
                 seat_window.center = buttons_pos["seat_window_x"], buttons_pos["seat_window_y"]
                 pygame.draw.rect(screen, GREY, seat_window)
-                buttons = create_button_center(buttons, "SEAT", (buttons_pos["seat_conf_x"], buttons_pos["seat_conf_y"]),
-                            (buttons_pos['width'], buttons_pos['height']), WHITE)
 
-                if buttons["SEAT"].collidepoint(mx, my) and click:
-                    if chosen_seat:
-                        take_a_seat(chosen_seat.id)
-                        show_seat_window = False
-
-                buttons = create_button_center(buttons, "CANCEL", (buttons_pos["seat_cancel_x"], buttons_pos["seat_cancel_y"]),
-                                        (buttons_pos['width'], buttons_pos['height']), WHITE)
-
-                if buttons["CANCEL"].collidepoint(mx, my) and click:
-                    show_seat_window = False
-                    chosen_seat = False
-
-                buyin_slider_rect = pygame.Rect(0, 0,
-                                          slider_pos['width'], slider_pos['height'])
+                #SLIDER
+                buyin_slider_rect = pygame.Rect(0, 0,slider_pos['width'], slider_pos['height'])
                 buyin_slider_rect.center = slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y']
                 buyin_slider_rect_hitbox = pygame.Rect(slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y'],
-                                                 slider_pos['width'] + 10, slider_pos['height'] + 25)
+                                                 slider_pos['width'] + 25, slider_pos['height'] + 25)
                 buyin_slider_rect_hitbox.center = slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y']
                 pygame.draw.rect(screen, BLACK, buyin_slider_rect)
                 if buyin_slider_rect_hitbox.collidepoint(mx, my) and click:
                     dot_x2 = round(mx, 0)
-                    if dot_x2 < slider_pos['start_x']:
-                        dot_x2 = slider_pos['start_x']
-                    if dot_x2 > slider_pos['end_x']:
-                        dot_x2 = slider_pos['end_x']
-                if "dot_x2" not in locals() or "dot_y2" not in locals():
-                    dot_x2, dot_y2 = slider_pos['start_x'], slider_pos['start_y']
+                    if dot_x2 < slider_pos['buyin_start_x']:
+                        dot_x2 = slider_pos['buyin_start_x']
+                    if dot_x2 > slider_pos['buyin_end_x']:
+                        dot_x2 = slider_pos['buyin_end_x']
                 pygame.draw.circle(screen, RED, (dot_x2, dot_y2), 7)
+                buy_in_size = float(round(board.min_buy_in + (board.max_buy_in - board.min_buy_in) * ((dot_x2 - slider_pos["buyin_start_x"]) / slider_pos["buyin_range"]), 0))
+                draw_text(f'BUY IN: {buy_in_size}$', font, BLACK, screen, slider_pos['buyin_cen_x'], slider_pos['buyin_cen_y'] - 30 )
 
+                # BUTTONS
+                buttons = create_button_center(buttons, "ACCEPT",
+                                               (buttons_pos["seat_conf_x"], buttons_pos["seat_conf_y"]),
+                                               (buttons_pos['width'], buttons_pos['height']), WHITE)
+
+                if buttons["ACCEPT"].collidepoint(mx, my) and click:
+                    if chosen_seat:
+                        take_a_seat(chosen_seat, buy_in_size)
+                        show_seat_window = False
+
+                buttons = create_button_center(buttons, "CANCEL",
+                                               (buttons_pos["seat_cancel_x"], buttons_pos["seat_cancel_y"]),
+                                               (buttons_pos['width'], buttons_pos['height']), WHITE)
+
+                if buttons["CANCEL"].collidepoint(mx, my) and click:
+                    show_seat_window = False
+                    chosen_seat = False
 
 
             click = False
@@ -386,7 +401,8 @@ def main_game(nickname, ip, port, client_id):
                     game_client.send("bye")
                     game_client.disconnect()
                     pygame.quit()
-
+                if event.type == pygame.KEYDOWN:
+                    pass
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         click = True
@@ -402,9 +418,12 @@ def main_game(nickname, ip, port, client_id):
     player = game_client.login()
     if player:
         pygame.init()
-        size = width, height = 1600, 900
+        size = width, height = 800, 450
         screen = pygame.display.set_mode(size)
-        font = pygame.font.SysFont(None, 20)
+        font_size = int(round(1/80 * width, 0))
+
+        font = pygame.font.SysFont(None, font_size)
+
         seats_pos, pot_pos, slider_pos, buttons_pos = calculate_seat_pos(width, height)
         table_view()
     else:
