@@ -95,6 +95,7 @@ class Hand:
 
         # INIT BOARD VARIABLES
         self.master.pot = 0
+        self.master.prize = {}
         self.master.check_size = 0
         self.master.game_status = True
         self.master.moving_player_seat_id = None
@@ -264,8 +265,7 @@ class Hand:
                 winners = self.find_winner()
                 self.split_pot(winners, self.master.pot)
 
-        if self.active_players > 1:
-            self.post_game()
+        self.post_game()
 
         for player in self.players_dict.values():
             if player:
@@ -322,10 +322,11 @@ class Hand:
 
     # INIT SHOWDOWN
     def post_game(self):
-        self.master.post_game = True
-        for pos, player in self.players_dict.items():
-            if player and self.master.players_status[pos]:
-                self.master.players_post_game_cards[pos] = player.cards
+        if self.active_players > 1:
+            self.master.post_game = True
+            for pos, player in self.players_dict.items():
+                if player and self.master.players_status[pos]:
+                    self.master.players_post_game_cards[pos] = player.cards
         time.sleep(5)
         self.master.post_game = False
         self.master.players_post_game_cards = {}

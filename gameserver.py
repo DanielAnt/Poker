@@ -138,7 +138,7 @@ class GameServer:
                         self.players[player_id].stand_up_queue = False
 
                     elif msg == "STANDUP":
-                        if self.players[player_id].active:
+                        if self.board.players_status[self.players[player_id].seat.id]:
                             self.players[player_id].stand_up_queue = True
                         else:
                             self.players[player_id].stand_up()
