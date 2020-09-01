@@ -169,14 +169,18 @@ class Hand:
                     break
                 if self.players_dict[self.current_pos]:
                     if self.master.players_status[self.current_pos] and self.current_pos not in self.all_in_players:
-                        self.master.moving_player_seat_id = self.current_pos
-                        break
+                        if self.players_dict[self.current_pos].id in self.gameserver.connected_players:
+                            self.master.moving_player_seat_id = self.current_pos
+                            break
+                        else:
+                            self.master.moving_player_seat_id = self.current_pos
+                            self.gameserver.game_pass(self.players_dict[self.current_pos].id)
+                            break
         else:
             self.next_stage()
 
     def put_players_money_to_pot(self, player, cash):
         cash = round(float(cash), 1)
-        print(cash, self.master.pot)
         if self.master.board_player_money[player.seat.id] > cash:
             self.master.board_player_money[player.seat.id] = round(self.master.board_player_money[player.seat.id]\
                                                              - cash, 1)
@@ -304,7 +308,6 @@ class Hand:
         return winners
 
     def split_pot(self, winners, pot):
-        print(f'player {winners}, won {pot}')
         self.handed_out_pot += round(pot, 1)
         if len(winners) > 1:
             split_pot = pot / len(winners)
