@@ -95,6 +95,7 @@ class Hand:
 
         # INIT BOARD VARIABLES
         self.master.pot = 0
+        self.master.prize = {}
         self.master.check_size = 0
         self.master.game_status = True
         self.master.moving_player_seat_id = None
@@ -168,14 +169,18 @@ class Hand:
                     break
                 if self.players_dict[self.current_pos]:
                     if self.master.players_status[self.current_pos] and self.current_pos not in self.all_in_players:
-                        self.master.moving_player_seat_id = self.current_pos
-                        break
+                        if self.players_dict[self.current_pos].id in self.gameserver.connected_players:
+                            self.master.moving_player_seat_id = self.current_pos
+                            break
+                        else:
+                            self.master.moving_player_seat_id = self.current_pos
+                            self.gameserver.game_pass(self.players_dict[self.current_pos].id)
+                            break
         else:
             self.next_stage()
 
     def put_players_money_to_pot(self, player, cash):
         cash = round(float(cash), 1)
-        print(cash, self.master.pot)
         if self.master.board_player_money[player.seat.id] > cash:
             self.master.board_player_money[player.seat.id] = round(self.master.board_player_money[player.seat.id]\
                                                              - cash, 1)
@@ -264,8 +269,7 @@ class Hand:
                 winners = self.find_winner()
                 self.split_pot(winners, self.master.pot)
 
-        if self.active_players > 1:
-            self.post_game()
+        self.post_game()
 
         for player in self.players_dict.values():
             if player:
@@ -304,28 +308,27 @@ class Hand:
         return winners
 
     def split_pot(self, winners, pot):
-        print(f'player {winners}, won {pot}')
         self.handed_out_pot += round(pot, 1)
         if len(winners) > 1:
-            split_pot = pot / len(winners)
-            split_pot = round(split_pot, 1)
+            split_pot = round(float(pot / len(winners)), 1)
             for winner in winners:
-                self.master.board_player_money[winner] += split_pot
+                self.master.board_player_money[winner] = round(float(self.master.board_player_money[winner] + split_pot), 1)
                 if winner not in self.master.prize:
                     self.master.prize[winner] = 0
-                self.master.prize[winner] += split_pot
+                self.master.prize[winner] = round(float(self.master.prize[winner] + split_pot), 1)
         else:
-            self.master.board_player_money[winners[0]] += round(pot, 1)
+            self.master.board_player_money[winners[0]] = round(float(self.master.board_player_money[winners[0]] + pot), 1)
             if winners[0] not in self.master.prize:
                 self.master.prize[winners[0]] = 0
             self.master.prize[winners[0]] += round(pot, 1)
 
     # INIT SHOWDOWN
     def post_game(self):
-        self.master.post_game = True
-        for pos, player in self.players_dict.items():
-            if player and self.master.players_status[pos]:
-                self.master.players_post_game_cards[pos] = player.cards
+        if self.active_players > 1:
+            self.master.post_game = True
+            for pos, player in self.players_dict.items():
+                if player and self.master.players_status[pos]:
+                    self.master.players_post_game_cards[pos] = player.cards
         time.sleep(5)
         self.master.post_game = False
         self.master.players_post_game_cards = {}
