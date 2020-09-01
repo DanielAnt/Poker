@@ -272,7 +272,7 @@ def main_game(nickname, ip, port, client_id):
 
                 if bet_size < 0 or "bet_size" not in locals():
                     bet_size = 0
-                bet_size = round(bet_size, 1)
+                bet_size = round(float(bet_size), 1)
                 draw_text(str(bet_size)+" $", font, BLACK, screen, buttons_pos['pass_x'], height - height * 0.03)
 
                 # BET BUTTON

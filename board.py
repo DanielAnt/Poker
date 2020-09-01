@@ -310,15 +310,14 @@ class Hand:
     def split_pot(self, winners, pot):
         self.handed_out_pot += round(pot, 1)
         if len(winners) > 1:
-            split_pot = pot / len(winners)
-            split_pot = round(split_pot, 1)
+            split_pot = round(float(pot / len(winners)), 1)
             for winner in winners:
-                self.master.board_player_money[winner] += split_pot
+                self.master.board_player_money[winner] = round(float(self.master.board_player_money[winner] + split_pot), 1)
                 if winner not in self.master.prize:
                     self.master.prize[winner] = 0
-                self.master.prize[winner] += split_pot
+                self.master.prize[winner] = round(float(self.master.prize[winner] + split_pot), 1)
         else:
-            self.master.board_player_money[winners[0]] += round(pot, 1)
+            self.master.board_player_money[winners[0]] = round(float(self.master.board_player_money[winners[0]] + pot), 1)
             if winners[0] not in self.master.prize:
                 self.master.prize[winners[0]] = 0
             self.master.prize[winners[0]] += round(pot, 1)
